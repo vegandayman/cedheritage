@@ -29,6 +29,7 @@ async function fetchAllCards() {
                 const imgUrl = card.image_uris ? card.image_uris.normal : (card.card_faces ? card.card_faces[0].image_uris.normal : '');
                 legalCards.push({
                     n: card.name.toLowerCase(),
+                    t: card.type_line ? card.type_line.toLowerCase() : '', // Captured type line
                     u: card.scryfall_uri,
                     i: imgUrl
                 });
@@ -48,14 +49,13 @@ async function fetchAllCards() {
         }
     }
 
-    // Wrap array and timestamp into a single output object
     const outputData = {
         lastUpdated: new Date().toISOString(),
         cards: legalCards
     };
 
     fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Wrote ${legalCards.length} cards with timestamp to heritage_cards.json`);
+    console.log(`Extraction complete. Wrote ${legalCards.length} cards with types and timestamp to heritage_cards.json`);
 }
 
 fetchAllCards();

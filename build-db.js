@@ -1,16 +1,20 @@
 const fs = require('fs');
 
-const BASE_URL = 'https://api.scryfall.com/cards/search?q=';
-const QUERY = encodeURIComponent('f:commander (st:core OR st:expansion) -is:ub -o:"your commander"');
+const BASE_URL = 'https://api.scryfall.com/cards/search?';
+// Using 'in:' for reprint history, plus an explicit alphabetical sort parameter to prevent pagination drop-off
+const PARAMS = new URLSearchParams({
+    q: 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"',
+    order: 'name'
+});
 const DELAY_MS = 150;
 
 async function fetchAllCards() {
     let hasMore = true;
-    let url = BASE_URL + QUERY;
+    let url = BASE_URL + PARAMS.toString();
     const legalCards = [];
     let pageCount = 1;
 
-    console.log('Starting Scryfall extraction...');
+    console.log('Starting full Scryfall extraction (~25,000 cards)... This will take a few minutes.');
 
     while (hasMore) {
         try {
@@ -29,7 +33,7 @@ async function fetchAllCards() {
                 const imgUrl = card.image_uris ? card.image_uris.normal : (card.card_faces ? card.card_faces[0].image_uris.normal : '');
                 legalCards.push({
                     n: card.name.toLowerCase(),
-                    t: card.type_line ? card.type_line.toLowerCase() : '', // Captured type line
+                    t: card.type_line ? card.type_line.toLowerCase() : '',
                     u: card.scryfall_uri,
                     i: imgUrl
                 });
@@ -55,7 +59,7 @@ async function fetchAllCards() {
     };
 
     fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Wrote ${legalCards.length} cards with types and timestamp to heritage_cards.json`);
+    console.log(`Extraction complete. Wrote ${legalCards.length} cards to heritage_cards.json`);
 }
 
 fetchAllCards();

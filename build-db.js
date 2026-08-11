@@ -1,20 +1,15 @@
 const fs = require('fs');
 
-const BASE_URL = 'https://api.scryfall.com/cards/search?';
-// Using 'in:' for reprint history, plus an explicit alphabetical sort parameter to prevent pagination drop-off
-const PARAMS = new URLSearchParams({
-    q: 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"',
-    order: 'name'
-});
-const DELAY_MS = 150;
+const URL = 'https://api.scryfall.com/cards/search?q=f:commander+(in:core+OR+in:expansion)+-is:ub+-o:%22your+commander%22&order=name';
+const DELAY_MS = 600; // Increased to 600ms to strictly obey Scryfall's 2 req/sec search limit
 
 async function fetchAllCards() {
     let hasMore = true;
-    let url = BASE_URL + PARAMS.toString();
+    let url = URL;
     const legalCards = [];
     let pageCount = 1;
 
-    console.log('Starting full Scryfall extraction (~25,000 cards)... This will take a few minutes.');
+    console.log('Starting full Scryfall extraction (~25,000 cards)... This will take about 90 seconds.');
 
     while (hasMore) {
         try {
@@ -25,7 +20,16 @@ async function fetchAllCards() {
                 }
             });
 
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 429) {
+                console.log('Rate limited (429). Pausing for 30 seconds before retrying...');
+                await new Promise(resolve => setTimeout(resolve, 30000));
+                continue; // Retry the same page
+            }
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`HTTP error! status: ${response.status} - Body: ${errorBody}`);
+            }
 
             const data = await response.json();
             
@@ -48,8 +52,8 @@ async function fetchAllCards() {
                 await new Promise(resolve => setTimeout(resolve, DELAY_MS));
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
-            break;
+            console.error('Fatal extraction error:', error);
+            process.exit(1);
         }
     }
 
@@ -59,7 +63,7 @@ async function fetchAllCards() {
     };
 
     fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Wrote ${legalCards.length} cards to heritage_cards.json`);
+    console.log(`Extraction complete. Successfully wrote ${legalCards.length} cards to heritage_cards.json`);
 }
 
 fetchAllCards();

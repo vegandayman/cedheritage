@@ -20,7 +20,7 @@
             border-radius: 8px;
             background: #1e1e1e;
         }
-        input[type="text"], input[type="file"] { 
+        input[type="text"], select, input[type="file"] { 
             margin-bottom: 1rem; 
             width: 100%; 
             padding: 0.75rem; 
@@ -29,6 +29,10 @@
             color: #fff;
             border: 1px solid #444;
             border-radius: 4px;
+        }
+        .search-controls {
+            display: flex;
+            gap: 10px;
         }
         button { 
             padding: 0.75rem 1.5rem; 
@@ -79,7 +83,19 @@
 
     <section>
         <h2>1. Search Database</h2>
-        <input type="text" id="searchInput" placeholder="Enter card name (e.g., Lightning Bolt)">
+        <div class="search-controls">
+            <input type="text" id="searchInput" placeholder="Name keyword (optional, e.g., hot)">
+            <select id="typeSelect">
+                <option value="">All Types</option>
+                <option value="artifact">Artifact</option>
+                <option value="creature">Creature</option>
+                <option value="enchantment">Enchantment</option>
+                <option value="instant">Instant</option>
+                <option value="land">Land</option>
+                <option value="planeswalker">Planeswalker</option>
+                <option value="sorcery">Sorcery</option>
+            </select>
+        </div>
         <button onclick="searchCard()">Search Heritage</button>
         <div id="searchResults" class="result-box"></div>
     </section>
@@ -112,7 +128,6 @@
                 
                 const jsonPayload = await response.json();
                 
-                // Handle backwards compatibility if structure is raw array or wrapped object
                 if (Array.isArray(jsonPayload)) {
                     heritageDatabase = jsonPayload;
                 } else {
@@ -144,12 +159,16 @@
             }
 
             const input = document.getElementById('searchInput').value.trim().toLowerCase();
-            if (!input) return;
+            const selectedType = document.getElementById('typeSelect').value.toLowerCase();
 
-            const matches = heritageDatabase.filter(card => card.n.includes(input));
+            const matches = heritageDatabase.filter(card => {
+                const matchesName = input === '' || card.n.includes(input);
+                const matchesType = selectedType === '' || card.t.includes(selectedType);
+                return matchesName && matchesType;
+            });
 
             if (matches.length === 0) {
-                resultsDiv.innerHTML = `<span class="illegal">No legal cards found matching "${input}".</span>`;
+                resultsDiv.innerHTML = `<span class="illegal">No legal cards found matching your criteria.</span>`;
                 return;
             }
 

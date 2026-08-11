@@ -2,7 +2,7 @@ const fs = require('fs');
 
 const BASE_URL = 'https://api.scryfall.com/cards/search?q=';
 const QUERY = encodeURIComponent('f:commander (in:core OR in:expansion) -is:ub -o:"your commander"');
-const DELAY_MS = 150; // 150ms delay to safely stay under the 10 req/sec limit
+const DELAY_MS = 150;
 
 async function fetchAllCards() {
     let hasMore = true;
@@ -21,14 +21,17 @@ async function fetchAllCards() {
                 }
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
             const data = await response.json();
             
             data.data.forEach(card => {
-                legalCards.push(card.name.toLowerCase());
+                const imgUrl = card.image_uris ? card.image_uris.normal : (card.card_faces ? card.card_faces[0].image_uris.normal : '');
+                legalCards.push({
+                    n: card.name.toLowerCase(),
+                    u: card.scryfall_uri,
+                    i: imgUrl
+                });
             });
 
             console.log(`Fetched page ${pageCount}. Total cards so far: ${legalCards.length}`);

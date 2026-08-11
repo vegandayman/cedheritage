@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 const URL = 'https://api.scryfall.com/cards/search?q=f:commander+(in:core+OR+in:expansion)+-is:ub+-o:%22your+commander%22&order=name';
-const DELAY_MS = 600; // Increased to 600ms to strictly obey Scryfall's 2 req/sec search limit
+const DELAY_MS = 600;
 
 async function fetchAllCards() {
     let hasMore = true;
@@ -9,7 +9,7 @@ async function fetchAllCards() {
     const legalCards = [];
     let pageCount = 1;
 
-    console.log('Starting full Scryfall extraction (~25,000 cards)... This will take about 90 seconds.');
+    console.log('Starting full Scryfall extraction with Oracle text...');
 
     while (hasMore) {
         try {
@@ -23,7 +23,7 @@ async function fetchAllCards() {
             if (response.status === 429) {
                 console.log('Rate limited (429). Pausing for 30 seconds before retrying...');
                 await new Promise(resolve => setTimeout(resolve, 30000));
-                continue; // Retry the same page
+                continue;
             }
 
             if (!response.ok) {
@@ -35,9 +35,17 @@ async function fetchAllCards() {
             
             data.data.forEach(card => {
                 const imgUrl = card.image_uris ? card.image_uris.normal : (card.card_faces ? card.card_faces[0].image_uris.normal : '');
+                
+                // Extract Oracle text safely across normal and multi-faced cards
+                let oracleText = card.oracle_text || '';
+                if (!oracleText && card.card_faces) {
+                    oracleText = card.card_faces.map(f => f.oracle_text || '').join(' ');
+                }
+
                 legalCards.push({
                     n: card.name.toLowerCase(),
                     t: card.type_line ? card.type_line.toLowerCase() : '',
+                    o: oracleText.toLowerCase(), // Captured Oracle text
                     u: card.scryfall_uri,
                     i: imgUrl
                 });
@@ -63,7 +71,7 @@ async function fetchAllCards() {
     };
 
     fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Successfully wrote ${legalCards.length} cards to heritage_cards.json`);
+    console.log(`Extraction complete. Successfully wrote ${legalCards.length} cards with Oracle text to heritage_cards.json`);
 }
 
 fetchAllCards();

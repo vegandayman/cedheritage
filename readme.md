@@ -1,4 +1,4 @@
-Heritage Format Database & Deck Checker — README
+Heritage Format Database & Deck Checker — README 
 Welcome to the Heritage Format Tools repository! This application provides a static, zero-backend web interface hosted on GitHub Pages to help players search for legal Magic: The Gathering cards under the Heritage format ruleset and verify full 100-card decklists instantly.
 
 What is the Heritage Format?

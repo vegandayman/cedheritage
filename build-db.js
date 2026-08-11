@@ -1,7 +1,8 @@
 const fs = require('fs');
 
 const BASE_URL = 'https://api.scryfall.com/cards/search?q=';
-const QUERY = encodeURIComponent('f:commander (in:core OR in:expansion) -is:ub -o:"your commander"');
+// Updated query using set types and explicit legal parameters to prevent pagination truncation
+const QUERY = encodeURIComponent('f:commander (st:core OR st:expansion) -is:ub -o:"your commander"');
 const DELAY_MS = 150;
 
 async function fetchAllCards() {

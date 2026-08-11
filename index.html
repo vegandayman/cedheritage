@@ -32,7 +32,17 @@
         }
         .search-controls {
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 5px;
+        }
+        @media(min-width: 600px) {
+            .search-row {
+                display: flex;
+                gap: 10px;
+            }
+            .search-row > * {
+                flex: 1;
+            }
         }
         button { 
             padding: 0.75rem 1.5rem; 
@@ -84,17 +94,20 @@
     <section>
         <h2>1. Search Database</h2>
         <div class="search-controls">
-            <input type="text" id="searchInput" placeholder="Name keyword (optional, e.g., hot)">
-            <select id="typeSelect">
-                <option value="">All Types</option>
-                <option value="artifact">Artifact</option>
-                <option value="creature">Creature</option>
-                <option value="enchantment">Enchantment</option>
-                <option value="instant">Instant</option>
-                <option value="land">Land</option>
-                <option value="planeswalker">Planeswalker</option>
-                <option value="sorcery">Sorcery</option>
-            </select>
+            <div class="search-row">
+                <input type="text" id="searchInput" placeholder="Name keyword (e.g., Lightning)">
+                <select id="typeSelect">
+                    <option value="">All Types</option>
+                    <option value="artifact">Artifact</option>
+                    <option value="creature">Creature</option>
+                    <option value="enchantment">Enchantment</option>
+                    <option value="instant">Instant</option>
+                    <option value="land">Land</option>
+                    <option value="planeswalker">Planeswalker</option>
+                    <option value="sorcery">Sorcery</option>
+                </select>
+            </div>
+            <input type="text" id="oracleInput" placeholder="Rules text keyword (e.g., proliferate, draw a card)">
         </div>
         <button onclick="searchCard()">Search Heritage</button>
         <div id="searchResults" class="result-box"></div>
@@ -158,13 +171,15 @@
                 return;
             }
 
-            const input = document.getElementById('searchInput').value.trim().toLowerCase();
+            const nameInput = document.getElementById('searchInput').value.trim().toLowerCase();
             const selectedType = document.getElementById('typeSelect').value.toLowerCase();
+            const oracleInput = document.getElementById('oracleInput').value.trim().toLowerCase();
 
             const matches = heritageDatabase.filter(card => {
-                const matchesName = input === '' || card.n.includes(input);
+                const matchesName = nameInput === '' || card.n.includes(nameInput);
                 const matchesType = selectedType === '' || card.t.includes(selectedType);
-                return matchesName && matchesType;
+                const matchesOracle = oracleInput === '' || (card.o && card.o.includes(oracleInput));
+                return matchesName && matchesType && matchesOracle;
             });
 
             if (matches.length === 0) {

@@ -1,7 +1,6 @@
 const fs = require('fs');
 
 const BASE_URL = 'https://api.scryfall.com/cards/search?q=';
-// Updated query using set types and explicit legal parameters to prevent pagination truncation
 const QUERY = encodeURIComponent('f:commander (st:core OR st:expansion) -is:ub -o:"your commander"');
 const DELAY_MS = 150;
 
@@ -49,8 +48,14 @@ async function fetchAllCards() {
         }
     }
 
-    fs.writeFileSync('heritage_cards.json', JSON.stringify(legalCards));
-    console.log(`Extraction complete. Wrote ${legalCards.length} cards to heritage_cards.json`);
+    // Wrap array and timestamp into a single output object
+    const outputData = {
+        lastUpdated: new Date().toISOString(),
+        cards: legalCards
+    };
+
+    fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
+    console.log(`Extraction complete. Wrote ${legalCards.length} cards with timestamp to heritage_cards.json`);
 }
 
 fetchAllCards();

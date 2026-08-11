@@ -40,6 +40,16 @@
             font-weight: bold;
         }
         button:hover { background: #005f9e; }
+        .load-btn {
+            display: block;
+            width: 100%;
+            font-size: 1.5rem;
+            padding: 1.5rem;
+            background: #4caf50;
+            margin-bottom: 2rem;
+        }
+        .load-btn:hover { background: #43a047; }
+        .load-btn:disabled { background: #333; color: #888; cursor: not-allowed; }
         .result-box { 
             margin-top: 1.5rem; 
             padding: 1rem; 
@@ -50,18 +60,16 @@
         }
         .legal { color: #4caf50; font-weight: bold; }
         .illegal { color: #f44336; font-weight: bold; }
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-        img.card-image { width: 100%; border-radius: 4.75%; }
         .deck-item { margin-bottom: 0.25rem; border-bottom: 1px solid #444; padding-bottom: 0.25rem; }
+        ul { list-style-type: none; padding-left: 0; }
+        li { padding: 0.5rem 0; border-bottom: 1px solid #333; }
     </style>
 </head>
 <body>
     <h1>Heritage Format Tools</h1>
+
+    <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">LOAD DATABASE</button>
+    <div id="dbStatus" style="margin-bottom: 2rem; text-align: center; font-weight: bold;"></div>
 
     <section>
         <h2>1. Search Database</h2>
@@ -79,57 +87,81 @@
     </section>
 
     <script>
-        const BASE_QUERY = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"';
         const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
+        let heritageDatabase = new Set();
+        let isDbLoaded = false;
 
-        async function searchCard() {
-            const input = document.getElementById('searchInput').value.trim();
-            const resultsDiv = document.getElementById('searchResults');
-            if (!input) return;
-
-            resultsDiv.innerHTML = 'Searching...';
-            const query = encodeURIComponent(`${BASE_QUERY} "${input}"`);
+        async function loadDatabase() {
+            const btn = document.getElementById('loadDbBtn');
+            const status = document.getElementById('dbStatus');
             
+            btn.disabled = true;
+            btn.innerText = "LOADING...";
+            status.innerHTML = "Fetching local database file...";
+
             try {
-                const response = await fetch(`https://api.scryfall.com/cards/search?q=${query}`);
-                if (!response.ok) throw new Error('No legal cards found matching that search.');
+                const response = await fetch('./heritage_cards.json');
+                if (!response.ok) throw new Error('Database file not found. Ensure heritage_cards.json is uploaded.');
+                
                 const data = await response.json();
+                heritageDatabase = new Set(data.map(name => name.toLowerCase()));
+                isDbLoaded = true;
                 
-                let html = `<p class="legal">Found ${data.total_cards} legal card(s).</p><div class="gallery">`;
-                
-                data.data.forEach(card => {
-                    // Handle dual-faced cards missing normal image uri on the root object
-                    const imgUrl = card.image_uris ? card.image_uris.normal : (card.card_faces ? card.card_faces[0].image_uris.normal : '');
-                    if (imgUrl) {
-                        html += `<a href="${card.scryfall_uri}" target="_blank"><img src="${imgUrl}" class="card-image" alt="${card.name}"></a>`;
-                    }
-                });
-                html += '</div>';
-                
-                // If more than 175 results, Scryfall paginates. Note this limitation for broad searches.
-                if (data.has_more) {
-                    html += `<p><em>Results limited to first page. Be more specific to see other cards.</em></p>`;
-                }
-                
-                resultsDiv.innerHTML = html;
+                btn.style.display = 'none';
+                status.innerHTML = `<span class="legal">Database Loaded: ${heritageDatabase.size} legal cards ready.</span>`;
             } catch (error) {
-                resultsDiv.innerHTML = `<span class="illegal">${error.message}</span>`;
+                console.error("Failed to load heritage_cards.json:", error);
+                status.innerHTML = `<span class="illegal">Error: ${error.message}</span>`;
+                btn.disabled = false;
+                btn.innerText = "RETRY LOAD DATABASE";
             }
         }
 
-        async function checkDeck() {
-            const fileInput = document.getElementById('deckFile');
-            const resultsDiv = document.getElementById('deckResults');
+        function searchCard() {
+            const resultsDiv = document.getElementById('searchResults');
+            if (!isDbLoaded) {
+                resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
+                return;
+            }
+
+            const input = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!input) return;
+
+            const matches = [...heritageDatabase].filter(name => name.includes(input));
+
+            if (matches.length === 0) {
+                resultsDiv.innerHTML = `<span class="illegal">No legal cards found matching "${input}".</span>`;
+                return;
+            }
+
+            const displayLimit = 50;
+            let html = `<p class="legal">Found ${matches.length} legal card(s). ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p><ul>`;
             
+            matches.slice(0, displayLimit).forEach(name => {
+                const displayName = name.replace(/\b\w/g, l => l.toUpperCase());
+                html += `<li>${displayName}</li>`;
+            });
+            html += '</ul>';
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function checkDeck() {
+            const resultsDiv = document.getElementById('deckResults');
+            if (!isDbLoaded) {
+                resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
+                return;
+            }
+
+            const fileInput = document.getElementById('deckFile');
             if (!fileInput.files[0]) {
                 resultsDiv.innerHTML = 'Please select a file first.';
                 return;
             }
 
-            resultsDiv.innerHTML = 'Parsing file and verifying via Scryfall...';
             const reader = new FileReader();
             
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 const text = e.target.result;
                 const lines = text.split('\n');
                 const cardNames = [];
@@ -138,8 +170,7 @@
                     const cleanLine = line.trim();
                     if (!cleanLine || cleanLine.toLowerCase().startsWith('sideboard') || cleanLine.toLowerCase().startsWith('commander')) return;
 
-                    // Regex matches numbers at start (1x or 1), then grabs everything up to a parenthesis or end of line
-                    const match = cleanLine.match(/^(\d+x?\s+)?([^\(]+)/);
+                    const match = cleanLine.match(/^(\d+x?\s+)?([^<\[\(\*]+)/);
                     if (match && match[2]) {
                         const name = match[2].trim();
                         if (name && !BASIC_LANDS.includes(name.toLowerCase())) {
@@ -153,36 +184,13 @@
                     return;
                 }
 
-                // Batch into groups of 25 to respect Scryfall's URI length limit
-                const chunkSize = 25;
-                let legalCards = new Set();
-
-                for (let i = 0; i < cardNames.length; i += chunkSize) {
-                    const chunk = cardNames.slice(i, i + chunkSize);
-                    const exactMatches = chunk.map(name => `exact:"${name.replace(/"/g, '')}"`).join(' OR ');
-                    const query = encodeURIComponent(`${BASE_QUERY} (${exactMatches})`);
-                    
-                    try {
-                        // 100ms delay to respect Scryfall's 10 req/sec limit
-                        await new Promise(r => setTimeout(r, 100));
-                        
-                        const response = await fetch(`https://api.scryfall.com/cards/search?q=${query}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            data.data.forEach(card => legalCards.add(card.name.toLowerCase()));
-                        }
-                    } catch (error) {
-                        // 404 means no cards in this chunk passed the filter. Safe to ignore.
-                    }
-                }
-
                 resultsDiv.innerHTML = '<h3>Legality Report</h3>';
                 let hasIllegals = false;
                 
                 cardNames.forEach(name => {
                     const lowerName = name.toLowerCase();
-                    // Check exact match or split card match (e.g. "Fire" in "Fire // Ice")
-                    const isLegal = [...legalCards].some(legalName => {
+                    
+                    const isLegal = [...heritageDatabase].some(legalName => {
                         const parts = legalName.split(' // ');
                         return legalName === lowerName || parts.includes(lowerName);
                     });

@@ -1,0 +1,30 @@
+name: Update Heritage Database
+
+on:
+  workflow_dispatch: # This enables the manual "Run workflow" button
+
+permissions:
+  contents: write
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run extraction script
+        run: node build-db.js
+
+      - name: Commit and push JSON
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add heritage_cards.json
+          git commit -m "Update Heritage legal cards database" || echo "No changes to commit"
+          git push

@@ -61,8 +61,14 @@
         .legal { color: #4caf50; font-weight: bold; }
         .illegal { color: #f44336; font-weight: bold; }
         .deck-item { margin-bottom: 0.25rem; border-bottom: 1px solid #444; padding-bottom: 0.25rem; }
-        ul { list-style-type: none; padding-left: 0; }
-        li { padding: 0.5rem 0; border-bottom: 1px solid #333; }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        img.card-image { width: 100%; border-radius: 4.75%; transition: transform 0.2s; }
+        img.card-image:hover { transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -88,7 +94,8 @@
 
     <script>
         const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
-        let heritageDatabase = new Set();
+        let heritageDatabase = [];
+        let legalNamesSet = new Set();
         let isDbLoaded = false;
 
         async function loadDatabase() {
@@ -103,12 +110,14 @@
                 const response = await fetch('./heritage_cards.json');
                 if (!response.ok) throw new Error('Database file not found. Ensure heritage_cards.json is uploaded.');
                 
-                const data = await response.json();
-                heritageDatabase = new Set(data.map(name => name.toLowerCase()));
+                heritageDatabase = await response.json();
+                
+                // Create a Set of just the names for fast O(1) lookups during deck checks
+                legalNamesSet = new Set(heritageDatabase.map(card => card.n));
                 isDbLoaded = true;
                 
                 btn.style.display = 'none';
-                status.innerHTML = `<span class="legal">Database Loaded: ${heritageDatabase.size} legal cards ready.</span>`;
+                status.innerHTML = `<span class="legal">Database Loaded: ${heritageDatabase.length} legal cards ready.</span>`;
             } catch (error) {
                 console.error("Failed to load heritage_cards.json:", error);
                 status.innerHTML = `<span class="illegal">Error: ${error.message}</span>`;
@@ -127,7 +136,7 @@
             const input = document.getElementById('searchInput').value.trim().toLowerCase();
             if (!input) return;
 
-            const matches = [...heritageDatabase].filter(name => name.includes(input));
+            const matches = heritageDatabase.filter(card => card.n.includes(input));
 
             if (matches.length === 0) {
                 resultsDiv.innerHTML = `<span class="illegal">No legal cards found matching "${input}".</span>`;
@@ -135,13 +144,18 @@
             }
 
             const displayLimit = 50;
-            let html = `<p class="legal">Found ${matches.length} legal card(s). ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p><ul>`;
+            let html = `<p class="legal">Found ${matches.length} legal card(s). ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p><div class="gallery">`;
             
-            matches.slice(0, displayLimit).forEach(name => {
-                const displayName = name.replace(/\b\w/g, l => l.toUpperCase());
-                html += `<li>${displayName}</li>`;
+            matches.slice(0, displayLimit).forEach(card => {
+                if (card.i) {
+                    html += `<a href="${card.u}" target="_blank"><img src="${card.i}" class="card-image" alt="${card.n}"></a>`;
+                } else {
+                    // Fallback for missing images (rare but possible on split/DFC cards missing normal uris)
+                    const displayName = card.n.replace(/\b\w/g, l => l.toUpperCase());
+                    html += `<div><a href="${card.u}" target="_blank" style="color: #007acc; text-decoration: none;">${displayName}</a></div>`;
+                }
             });
-            html += '</ul>';
+            html += '</div>';
             
             resultsDiv.innerHTML = html;
         }
@@ -190,7 +204,7 @@
                 cardNames.forEach(name => {
                     const lowerName = name.toLowerCase();
                     
-                    const isLegal = [...heritageDatabase].some(legalName => {
+                    const isLegal = [...legalNamesSet].some(legalName => {
                         const parts = legalName.split(' // ');
                         return legalName === lowerName || parts.includes(lowerName);
                     });

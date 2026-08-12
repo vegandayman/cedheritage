@@ -1,6 +1,7 @@
 const fs = require('fs');
 
-const URL = 'https://api.scryfall.com/cards/search?q=f:commander+(in:core+OR+in:expansion)+-is:ub+-o:%22your+commander%22&order=name';
+// Using unique=prints so our script encounters special art printings and Secret Lair reskins
+const URL = 'https://api.scryfall.com/cards/search?q=f:commander+(in:core+OR+in:expansion)+-is:ub+-o:%22your+commander%22&unique=prints&order=name';
 const DELAY_MS = 600;
 
 async function fetchAllCards() {
@@ -9,7 +10,7 @@ async function fetchAllCards() {
     const legalCards = [];
     let pageCount = 1;
 
-    console.log('Starting full Scryfall extraction with Oracle text...');
+    console.log('Starting full Scryfall extraction (including reskins/flavor names)...');
 
     while (hasMore) {
         try {
@@ -36,22 +37,25 @@ async function fetchAllCards() {
             data.data.forEach(card => {
                 const imgUrl = card.image_uris ? card.image_uris.normal : (card.card_faces ? card.card_faces[0].image_uris.normal : '');
                 
-                // Extract Oracle text safely across normal and multi-faced cards
                 let oracleText = card.oracle_text || '';
                 if (!oracleText && card.card_faces) {
                     oracleText = card.card_faces.map(f => f.oracle_text || '').join(' ');
                 }
 
+                // Automatically capture flavor/reskin names (e.g. "Post's Citadel")
+                const flavorName = card.flavor_name ? card.flavor_name.toLowerCase() : null;
+
                 legalCards.push({
                     n: card.name.toLowerCase(),
+                    f: flavorName,
                     t: card.type_line ? card.type_line.toLowerCase() : '',
-                    o: oracleText.toLowerCase(), // Captured Oracle text
+                    o: oracleText.toLowerCase(),
                     u: card.scryfall_uri,
                     i: imgUrl
                 });
             });
 
-            console.log(`Fetched page ${pageCount}. Total cards so far: ${legalCards.length}`);
+            console.log(`Fetched page ${pageCount}. Total entries so far: ${legalCards.length}`);
 
             hasMore = data.has_more;
             if (hasMore) {
@@ -71,7 +75,7 @@ async function fetchAllCards() {
     };
 
     fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Successfully wrote ${legalCards.length} cards with Oracle text to heritage_cards.json`);
+    console.log(`Extraction complete. Successfully wrote ${legalCards.length} entries to heritage_cards.json`);
 }
 
 fetchAllCards();

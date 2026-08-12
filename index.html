@@ -268,7 +268,7 @@
                     } else {
                         hasIllegals = true;
                         // Construct a direct exact-name Scryfall search URL for illegal cards
-                        const searchUrl = `https://scryfall.com/search?q=exact:%22${encodeURIComponent(name)}%22`;
+                        const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(name)}%22`;
                         resultsDiv.innerHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${name}</a></div>`;
                     }
                 });

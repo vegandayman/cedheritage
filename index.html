@@ -124,7 +124,8 @@
     <script>
         const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
         let heritageDatabase = [];
-        let legalNamesSet = new Set();
+        let validNamesSet = new Set();
+        let validFlavorsSet = new Set();
         let isDbLoaded = false;
 
         async function loadDatabase() {
@@ -150,12 +151,14 @@
                     }
                 }
                 
-                legalNamesSet = new Set(heritageDatabase.map(card => card.n));
+                // Populate lookup sets for both canonical names and alternative flavor names
+                validNamesSet = new Set(heritageDatabase.map(card => card.n));
+                validFlavorsSet = new Set(heritageDatabase.map(card => card.f).filter(Boolean));
                 isDbLoaded = true;
                 
                 btn.style.display = 'none';
                 let dateString = window.dbLastUpdated ? ` (Updated: ${window.dbLastUpdated})` : '';
-                status.innerHTML = `<span class="legal">Database Loaded: ${heritageDatabase.length} legal cards ready${dateString}.</span>`;
+                status.innerHTML = `<span class="legal">Database Loaded: ${heritageDatabase.length} entries ready${dateString}.</span>`;
             } catch (error) {
                 console.error("Failed to load heritage_cards.json:", error);
                 status.innerHTML = `<span class="illegal">Error: ${error.message}</span>`;
@@ -176,7 +179,7 @@
             const oracleInput = document.getElementById('oracleInput').value.trim().toLowerCase();
 
             const matches = heritageDatabase.filter(card => {
-                const matchesName = nameInput === '' || card.n.includes(nameInput);
+                const matchesName = nameInput === '' || card.n.includes(nameInput) || (card.f && card.f.includes(nameInput));
                 const matchesType = selectedType === '' || card.t.includes(selectedType);
                 const matchesOracle = oracleInput === '' || (card.o && card.o.includes(oracleInput));
                 return matchesName && matchesType && matchesOracle;
@@ -188,7 +191,7 @@
             }
 
             const displayLimit = 50;
-            let html = `<p class="legal">Found ${matches.length} legal card(s). ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p><div class="gallery">`;
+            let html = `<p class="legal">Found ${matches.length} matching entry/entries. ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p><div class="gallery">`;
             
             matches.slice(0, displayLimit).forEach(card => {
                 if (card.i) {
@@ -247,9 +250,10 @@
                 cardNames.forEach(name => {
                     const lowerName = name.toLowerCase();
                     
-                    const isLegal = [...legalNamesSet].some(legalName => {
-                        const parts = legalName.split(' // ');
-                        return legalName === lowerName || parts.includes(lowerName);
+                    // Check against canonical base names, split-card parts, or alternate flavor names
+                    const isLegal = heritageDatabase.some(card => {
+                        const parts = card.n.split(' // ');
+                        return card.n === lowerName || parts.includes(lowerName) || (card.f && card.f === lowerName);
                     });
                     
                     if (isLegal) {

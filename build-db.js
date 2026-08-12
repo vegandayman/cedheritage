@@ -95,6 +95,8 @@ async function fetchQuery(queryString) {
                 });
             });
 
+            console.log(`Fetched page ${pageCount}. Total entries so far in this query: ${results.length}`);
+
             hasMore = data.has_more;
             if (hasMore) {
                 url = data.next_page;

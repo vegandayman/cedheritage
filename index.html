@@ -257,17 +257,24 @@
                 cardNames.forEach(name => {
                     const lowerName = name.toLowerCase();
                     
-                    // Use .find() instead of .some() so we can retrieve the card object to grab its exact URL
                     const matchingCard = heritageDatabase.find(card => {
                         const parts = card.n.split(' // ');
                         return card.n === lowerName || parts.includes(lowerName) || (card.f && card.f === lowerName);
                     });
                     
                     if (matchingCard) {
-                        resultsDiv.innerHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${name}</a></div>`;
+                        let displayName = name;
+                        
+                        // If the uploaded name was the flavor/reskin name, append the base name in parentheses
+                        if (matchingCard.f === lowerName) {
+                            // Title-case the base name so it looks clean (e.g., "bolas's citadel" -> "Bolas's Citadel")
+                            const baseNameFormatted = matchingCard.n.replace(/\b\w/g, char => char.toUpperCase());
+                            displayName = `${name} (${baseNameFormatted})`;
+                        }
+
+                        resultsDiv.innerHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
                     } else {
                         hasIllegals = true;
-                        // Construct a direct exact-name Scryfall search URL for illegal cards
                         const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(name)}%22`;
                         resultsDiv.innerHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${name}</a></div>`;
                     }

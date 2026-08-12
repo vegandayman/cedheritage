@@ -75,6 +75,18 @@
         .legal { color: #4caf50; font-weight: bold; }
         .illegal { color: #f44336; font-weight: bold; }
         .deck-item { margin-bottom: 0.25rem; border-bottom: 1px solid #444; padding-bottom: 0.25rem; }
+        
+        /* New CSS for decklist hyperlinks */
+        .deck-item a {
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .deck-item a:hover {
+            color: #007acc;
+            text-decoration: underline;
+        }
+
         .gallery {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -124,8 +136,6 @@
     <script>
         const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
         let heritageDatabase = [];
-        let validNamesSet = new Set();
-        let validFlavorsSet = new Set();
         let isDbLoaded = false;
 
         async function loadDatabase() {
@@ -151,9 +161,6 @@
                     }
                 }
                 
-                // Populate lookup sets for both canonical names and alternative flavor names
-                validNamesSet = new Set(heritageDatabase.map(card => card.n));
-                validFlavorsSet = new Set(heritageDatabase.map(card => card.f).filter(Boolean));
                 isDbLoaded = true;
                 
                 btn.style.display = 'none';
@@ -250,17 +257,19 @@
                 cardNames.forEach(name => {
                     const lowerName = name.toLowerCase();
                     
-                    // Check against canonical base names, split-card parts, or alternate flavor names
-                    const isLegal = heritageDatabase.some(card => {
+                    // Use .find() instead of .some() so we can retrieve the card object to grab its exact URL
+                    const matchingCard = heritageDatabase.find(card => {
                         const parts = card.n.split(' // ');
                         return card.n === lowerName || parts.includes(lowerName) || (card.f && card.f === lowerName);
                     });
                     
-                    if (isLegal) {
-                        resultsDiv.innerHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> ${name}</div>`;
+                    if (matchingCard) {
+                        resultsDiv.innerHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${name}</a></div>`;
                     } else {
                         hasIllegals = true;
-                        resultsDiv.innerHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> ${name}</div>`;
+                        // Construct a direct exact-name Scryfall search URL for illegal cards
+                        const searchUrl = `https://scryfall.com/search?q=exact:%22${encodeURIComponent(name)}%22`;
+                        resultsDiv.innerHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${name}</a></div>`;
                     }
                 });
 

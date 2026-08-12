@@ -10,7 +10,7 @@ async function fetchAllCards() {
 
     // 2. Fetch cards with flavor names (Secret Lairs, reskins, etc.) to catch alternate titles like "Post's Citadel"
     // We target prints that have a flavor name while ensuring they still pass format constraints
-    const flavorQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander" flavor>=a';
+   const flavorQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander" has:flavor_name';
     console.log('Fetching promotional reskins and flavor-name variants...');
     const flavorCards = await fetchQuery(flavorQuery);
 

@@ -21,7 +21,7 @@ jobs:
           node-version: '20'
 
       - name: Run JavaScript file
-        run: node your-script-file.js # Replace with your actual script filename
+        run: node update-db.js # Replace with your actual script filename
 
       - name: Commit and push changes
         run: |

@@ -251,8 +251,10 @@
                     return;
                 }
 
-                resultsDiv.innerHTML = '<h3>Legality Report</h3>';
-                let hasIllegals = false;
+                // Initialize counters for the summary
+                let legalCount = 0;
+                let illegalCount = 0;
+                let listHTML = '';
                 
                 cardNames.forEach(name => {
                     const lowerName = name.toLowerCase();
@@ -263,25 +265,36 @@
                     });
                     
                     if (matchingCard) {
+                        legalCount++;
                         let displayName = name;
                         
-                        // If the uploaded name was the flavor/reskin name, append the base name in parentheses
                         if (matchingCard.f === lowerName) {
-                            // Title-case the base name so it looks clean (e.g., "bolas's citadel" -> "Bolas's Citadel")
                             const baseNameFormatted = matchingCard.n.replace(/\b\w/g, char => char.toUpperCase());
                             displayName = `${name} (${baseNameFormatted})`;
                         }
 
-                        resultsDiv.innerHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
+                        listHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
                     } else {
-                        hasIllegals = true;
+                        illegalCount++;
                         const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(name)}%22`;
-                        resultsDiv.innerHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${name}</a></div>`;
+                        listHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${name}</a></div>`;
                     }
                 });
 
-                if (!hasIllegals) {
-                    resultsDiv.innerHTML += '<h4 class="legal" style="margin-top: 1rem;">All non-basic cards are Heritage Legal.</h4>';
+                // Build the summary header
+                let summaryHTML = `<h3>Legality Report</h3>`;
+                summaryHTML += `<p style="font-size: 1.1rem; border-bottom: 1px solid #444; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+                    <strong>Total Checked:</strong> ${cardNames.length} &nbsp;|&nbsp; 
+                    <span class="legal">Legal: ${legalCount}</span> &nbsp;|&nbsp; 
+                    <span class="illegal">Illegal: ${illegalCount}</span>
+                </p>`;
+
+                // Combine the summary and the list
+                resultsDiv.innerHTML = summaryHTML + listHTML;
+
+                // Add the final verdict at the bottom if perfectly legal
+                if (illegalCount === 0) {
+                    resultsDiv.innerHTML += '<h4 class="legal" style="margin-top: 1.5rem; text-align: center;">All non-basic cards are Heritage Legal!</h4>';
                 }
             };
             

@@ -1,4 +1,139 @@
-const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heritage Format Checker</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            margin: 2rem auto; 
+            max-width: 800px; 
+            background: #121212; 
+            color: #e0e0e0;
+        }
+        h1, h2 { color: #ffffff; }
+        section { 
+            margin-bottom: 2rem; 
+            padding: 1.5rem; 
+            border: 1px solid #333; 
+            border-radius: 8px;
+            background: #1e1e1e;
+        }
+        input[type="text"], select, input[type="file"] { 
+            margin-bottom: 1rem; 
+            width: 100%; 
+            padding: 0.75rem; 
+            box-sizing: border-box;
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+        .search-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        @media(min-width: 600px) {
+            .search-row {
+                display: flex;
+                gap: 10px;
+            }
+            .search-row > * {
+                flex: 1;
+            }
+        }
+        button { 
+            padding: 0.75rem 1.5rem; 
+            cursor: pointer; 
+            background: #007acc; 
+            color: white; 
+            border: none; 
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        button:hover { background: #005f9e; }
+        .load-btn {
+            display: block;
+            width: 100%;
+            font-size: 1.5rem;
+            padding: 1.5rem;
+            background: #4caf50;
+            margin-bottom: 2rem;
+        }
+        .load-btn:hover { background: #43a047; }
+        .load-btn:disabled { background: #333; color: #888; cursor: not-allowed; }
+        .result-box { 
+            margin-top: 1.5rem; 
+            padding: 1rem; 
+            background: #2a2a2a; 
+            border-radius: 4px;
+            min-height: 50px; 
+            border: 1px solid #444;
+        }
+        .legal { color: #4caf50; font-weight: bold; }
+        .illegal { color: #f44336; font-weight: bold; }
+        .deck-item { margin-bottom: 0.25rem; border-bottom: 1px solid #444; padding-bottom: 0.25rem; }
+        
+        .deck-item a {
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .deck-item a:hover {
+            color: #007acc;
+            text-decoration: underline;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        img.card-image { width: 100%; border-radius: 4.75%; transition: transform 0.2s; }
+        img.card-image:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <h1>Heritage Format Tools</h1>
+
+    <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">LOAD DATABASE</button>
+    <div id="dbStatus" style="margin-bottom: 2rem; text-align: center; font-weight: bold;"></div>
+
+    <section>
+        <h2>1. Search Database</h2>
+        <div class="search-controls">
+            <div class="search-row">
+                <input type="text" id="searchInput" placeholder="Name keyword (e.g., Lightning)">
+                <select id="typeSelect">
+                    <option value="">All Types</option>
+                    <option value="artifact">Artifact</option>
+                    <option value="creature">Creature</option>
+                    <option value="enchantment">Enchantment</option>
+                    <option value="instant">Instant</option>
+                    <option value="land">Land</option>
+                    <option value="planeswalker">Planeswalker</option>
+                    <option value="sorcery">Sorcery</option>
+                </select>
+            </div>
+            <input type="text" id="oracleInput" placeholder="Rules text keyword (e.g., proliferate, draw a card)">
+        </div>
+        <button onclick="searchCard()">Search Heritage</button>
+        <div id="searchResults" class="result-box"></div>
+    </section>
+
+    <section>
+        <h2>2. Decklist Legality Checker</h2>
+        <p>Upload a standard text decklist. Quantities and set codes will be stripped automatically. Basic lands are ignored.</p>
+        <input type="file" id="deckFile" accept=".txt">
+        <button onclick="checkDeck()">Check Legality</button>
+        <div id="deckResults" class="result-box"></div>
+    </section>
+
+    <script>
+        const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
         let heritageDatabase = [];
         let isDbLoaded = false;
 
@@ -11,7 +146,8 @@ const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-co
             status.innerHTML = "Fetching local database file...";
 
             try {
-                const response = await fetch('./heritage_cards.json');
+                // Add a cache-buster parameter to ensure we get the absolute latest JSON
+                const response = await fetch('./heritage_cards.json?v=' + new Date().getTime());
                 if (!response.ok) throw new Error('Database file not found. Ensure heritage_cards.json is uploaded.');
                 
                 const jsonPayload = await response.json();
@@ -50,8 +186,17 @@ const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-co
             const oracleInput = document.getElementById('oracleInput').value.trim().toLowerCase();
 
             const matches = heritageDatabase.filter(card => {
-                // Check if name matches base name OR any of the flavor names in the array
-                const matchesName = nameInput === '' || card.n.includes(nameInput) || (card.f && card.f.some(flavor => flavor.includes(nameInput)));
+                let matchesFlavor = false;
+                if (card.f) {
+                    // Fail-safe: handles flavor names whether the JSON stores them as arrays or strings
+                    if (Array.isArray(card.f)) {
+                        matchesFlavor = card.f.some(flavor => flavor.includes(nameInput));
+                    } else {
+                        matchesFlavor = card.f.includes(nameInput);
+                    }
+                }
+
+                const matchesName = nameInput === '' || card.n.includes(nameInput) || matchesFlavor;
                 const matchesType = selectedType === '' || card.t.includes(selectedType);
                 const matchesOracle = oracleInput === '' || (card.o && card.o.includes(oracleInput));
                 return matchesName && matchesType && matchesOracle;
@@ -120,30 +265,52 @@ const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-co
                 let illegalCount = 0;
                 let listHTML = '';
                 
-                cardNames.forEach(name => {
-                    const lowerName = name.toLowerCase();
+                cardNames.forEach(originalName => {
+                    const lowerName = originalName.toLowerCase();
+                    const searchName = lowerName.split('/')[0].trim(); // Resolves split cards perfectly
                     
                     const matchingCard = heritageDatabase.find(card => {
                         const parts = card.n.split(' // ');
-                        // Check base name, split name, or if lowerName exists in the flavor array
-                        return card.n === lowerName || parts.includes(lowerName) || (card.f && card.f.includes(lowerName));
+                        
+                        let matchesFlavor = false;
+                        if (card.f) {
+                            if (Array.isArray(card.f)) {
+                                matchesFlavor = card.f.includes(lowerName) || card.f.includes(searchName);
+                            } else {
+                                matchesFlavor = card.f === lowerName || card.f === searchName;
+                            }
+                        }
+
+                        return card.n === lowerName || 
+                               card.n === searchName || 
+                               parts.includes(lowerName) || 
+                               parts.includes(searchName) || 
+                               matchesFlavor;
                     });
                     
                     if (matchingCard) {
                         legalCount++;
-                        let displayName = name;
+                        let displayName = originalName;
                         
-                        // Append the base name in parentheses if a flavor name was triggered
-                        if (matchingCard.f && matchingCard.f.includes(lowerName)) {
+                        let flavorMatched = false;
+                        if (matchingCard.f) {
+                            if (Array.isArray(matchingCard.f)) {
+                                flavorMatched = matchingCard.f.includes(lowerName) || matchingCard.f.includes(searchName);
+                            } else {
+                                flavorMatched = matchingCard.f === lowerName || matchingCard.f === searchName;
+                            }
+                        }
+
+                        if (flavorMatched) {
                             const baseNameFormatted = matchingCard.n.replace(/\b\w/g, char => char.toUpperCase());
-                            displayName = `${name} (${baseNameFormatted})`;
+                            displayName = `${originalName} (${baseNameFormatted})`;
                         }
 
                         listHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
                     } else {
                         illegalCount++;
-                        const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(name)}%22`;
-                        listHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${name}</a></div>`;
+                        const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(searchName)}%22`;
+                        listHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${originalName}</a></div>`;
                     }
                 });
 
@@ -163,3 +330,6 @@ const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-co
             
             reader.readAsText(fileInput.files[0]);
         }
+    </script>
+</body>
+</html>

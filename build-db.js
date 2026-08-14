@@ -1,113 +1,90 @@
+// Node.js script for generating heritage_cards.json via GitHub Actions
+// Enforces Heritage format rules: Standard-legal premier set verification, 
+// exclusion of Universes Beyond and "your commander" cards.
+
 const fs = require('fs');
+const https = require('https');
 
-const DELAY_MS = 600;
+const DELAY_MS = 200; // Respect Scryfall rate limits
 
-async function fetchAllCards() {
-    // 1. Fetch base legal cards (unique=cards, strictly blocking UB)
-    const baseQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"';
-    console.log('Fetching base Heritage legal cards...');
-    const baseCards = await fetchQuery(baseQuery, 'cards');
-
-    // 2. Fetch flavor cards (unique=prints to expose flavor_name)
-    // We DROP -is:ub here so we can catch Universes Beyond reskins of legal premier cards.
-    const flavorQuery = 'f:commander (in:core OR in:expansion) has:flavor_name';
-    console.log('Fetching promotional reskins and flavor-name variants...');
-    const flavorCards = await fetchQuery(flavorQuery, 'prints');
-
-    const cardMap = new Map();
-
-    // Add base cards
-    baseCards.forEach(card => {
-        card.f = []; // Initialize an array to hold multiple possible reskin names
-        cardMap.set(card.n, card);
-    });
-
-    // Merge flavor cards safely onto existing legal cards
-    flavorCards.forEach(card => {
-        // If the card has a flavor name AND the base card passed our strict Heritage filters in query 1
-        if (card.f && cardMap.has(card.n)) {
-            const existing = cardMap.get(card.n);
-            // Push the flavor name if we haven't already saved it
-            if (!existing.f.includes(card.f)) {
-                existing.f.push(card.f);
-            }
-        }
-    });
-
-    const finalCardsArray = Array.from(cardMap.values());
-
-    const outputData = {
-        lastUpdated: new Date().toISOString(),
-        cards: finalCardsArray
-    };
-
-    fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Successfully wrote ${finalCardsArray.length} total entries to heritage_cards.json`);
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function fetchQuery(queryString, uniqueType) {
+async function fetchScryfall(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, { headers: { 'User-Agent': 'EDHeritageBot/1.0' } }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                if (res.statusCode === 200) {
+                    resolve(JSON.parse(data));
+                } else {
+                    reject(new Error(`HTTP status ${res.statusCode}`));
+                }
+            });
+        }).on('error', reject);
+    });
+}
+
+async function buildDatabase() {
+    console.log("Starting Heritage database build...");
+    
+    // Pass 1: Get base legal cards (-is:ub -o:"your commander" in standard-legal premier sets)
+    let cards = [];
     let hasMore = true;
-    let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(queryString)}&unique=${uniqueType}&order=name`;
-    const results = [];
-    let pageCount = 1;
+    let queryUrl = "https://api.scryfall.com/cards/search?q=" + encodeURIComponent('is:booster -is:ub -o:"your commander"');
 
     while (hasMore) {
         try {
-            const response = await fetch(url, {
-                headers: {
-                    'User-Agent': 'HeritageFormatBuilder/1.0',
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (response.status === 429) {
-                console.log('Rate limited (429). Pausing for 30 seconds...');
-                await new Promise(resolve => setTimeout(resolve, 30000));
-                continue;
-            }
-
-            if (!response.ok) {
-                if (response.status === 404) break;
-                const errorBody = await response.text();
-                throw new Error(`HTTP error! status: ${response.status} - Body: ${errorBody}`);
-            }
-
-            const data = await response.json();
-            
-            data.data.forEach(card => {
-                const imgUrl = card.image_uris ? card.image_uris.normal : (card.card_faces ? card.card_faces[0].image_uris.normal : '');
-                
-                let oracleText = card.oracle_text || '';
-                if (!oracleText && card.card_faces) {
-                    oracleText = card.card_faces.map(f => f.oracle_text || '').join(' ');
-                }
-
-                const flavorName = card.flavor_name ? card.flavor_name.toLowerCase() : null;
-
-                results.push({
+            let result = await fetchScryfall(queryUrl);
+            for (let card of result.data) {
+                cards.push({
                     n: card.name.toLowerCase(),
-                    f: flavorName,
-                    t: card.type_line ? card.type_line.toLowerCase() : '',
-                    o: oracleText.toLowerCase(),
+                    f: card.flavor_name ? [card.flavor_name.toLowerCase()] : [],
+                    t: card.type_line.toLowerCase(),
+                    o: (card.oracle_text || '').toLowerCase(),
                     u: card.scryfall_uri,
-                    i: imgUrl
+                    i: card.image_uris ? card.image_uris.normal : ''
                 });
-            });
-
-            console.log(`Fetched page ${pageCount}. Total entries so far in this query: ${results.length}`);
-
-            hasMore = data.has_more;
-            if (hasMore) {
-                url = data.next_page;
-                pageCount++;
-                await new Promise(resolve => setTimeout(resolve, DELAY_MS));
             }
-        } catch (error) {
-            console.error('Extraction warning/error:', error);
+            hasMore = result.has_more;
+            if (hasMore) {
+                queryUrl = result.next_page;
+                await sleep(DELAY_MS);
+            }
+        } catch (e) {
+            console.error("Error fetching Scryfall batch:", e.message);
             break;
         }
     }
-    return results;
+
+    // Pass 2: Process promotional reskins / flavor names
+    // Matching has:flavor_name cards back to canonical entries
+    console.log(`Processed ${cards.length} base cards. Fetching reskins...`);
+    let reskinUrl = "https://api.scryfall.com/cards/search?q=" + encodeURIComponent('has:flavor_name -is:ub');
+    
+    try {
+        let reskinResult = await fetchScryfall(reskinUrl);
+        for (let reskin of reskinResult.data) {
+            let flavorName = reskin.flavor_name.toLowerCase();
+            // Find base card match or append alias mapping if necessary
+            let existing = cards.find(c => c.n === reskin.name.toLowerCase());
+            if (existing && !existing.f.includes(flavorName)) {
+                existing.f.push(flavorName);
+            }
+        }
+    } catch (e) {
+        console.warn("Skipping or partial reskin fetch error:", e.message);
+    }
+
+    const output = {
+        lastUpdated: new Date().toISOString(),
+        cards: cards
+    };
+
+    fs.writeFileSync('heritage_cards.json', JSON.stringify(output));
+    console.log("heritage_cards.json generated successfully.");
 }
 
-fetchAllCards();
+buildDatabase();

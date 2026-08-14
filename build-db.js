@@ -3,34 +3,34 @@ const fs = require('fs');
 const DELAY_MS = 600;
 
 async function fetchAllCards() {
-    // 1. Fetch the main base legal cards (~25,000 cards)
+    // 1. Fetch base legal cards (unique=cards, strictly blocking UB)
     const baseQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"';
     console.log('Fetching base Heritage legal cards...');
-    const baseCards = await fetchQuery(baseQuery);
+    const baseCards = await fetchQuery(baseQuery, 'cards');
 
-    // 2. Fetch cards with flavor names (Secret Lairs, reskins, etc.) to catch alternate titles like "Post's Citadel"
-    // We target prints that have a flavor name while ensuring they still pass format constraints
-   const flavorQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander" has:flavor_name';
+    // 2. Fetch flavor cards (unique=prints to expose flavor_name)
+    // We DROP -is:ub here so we can catch Universes Beyond reskins of legal premier cards.
+    const flavorQuery = 'f:commander (in:core OR in:expansion) has:flavor_name';
     console.log('Fetching promotional reskins and flavor-name variants...');
-    const flavorCards = await fetchQuery(flavorQuery);
+    const flavorCards = await fetchQuery(flavorQuery, 'prints');
 
-    // Combine and deduplicate entries
     const cardMap = new Map();
 
     // Add base cards
     baseCards.forEach(card => {
+        card.f = []; // Initialize an array to hold multiple possible reskin names
         cardMap.set(card.n, card);
     });
 
-    // Merge flavor cards, adding `f` property when a flavor name exists
+    // Merge flavor cards safely onto existing legal cards
     flavorCards.forEach(card => {
+        // If the card has a flavor name AND the base card passed our strict Heritage filters in query 1
         if (card.f && cardMap.has(card.n)) {
-            // Attach the flavor name to the existing base card record
             const existing = cardMap.get(card.n);
-            existing.f = card.f; // Keep track of the alternate name
-        } else if (card.f) {
-            // If it's a standalone entry not yet caught, add it
-            cardMap.set(card.n, card);
+            // Push the flavor name if we haven't already saved it
+            if (!existing.f.includes(card.f)) {
+                existing.f.push(card.f);
+            }
         }
     });
 
@@ -42,12 +42,12 @@ async function fetchAllCards() {
     };
 
     fs.writeFileSync('heritage_cards.json', JSON.stringify(outputData));
-    console.log(`Extraction complete. Successfully wrote ${finalCardsArray.length} total entries (including reskins) to heritage_cards.json`);
+    console.log(`Extraction complete. Successfully wrote ${finalCardsArray.length} total entries to heritage_cards.json`);
 }
 
-async function fetchQuery(queryString) {
+async function fetchQuery(queryString, uniqueType) {
     let hasMore = true;
-    let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(queryString)}&order=name`;
+    let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(queryString)}&unique=${uniqueType}&order=name`;
     const results = [];
     let pageCount = 1;
 
@@ -67,7 +67,6 @@ async function fetchQuery(queryString) {
             }
 
             if (!response.ok) {
-                // If flavor query returns 404 (no results found for a specific sub-query), safely return empty array
                 if (response.status === 404) break;
                 const errorBody = await response.text();
                 throw new Error(`HTTP error! status: ${response.status} - Body: ${errorBody}`);

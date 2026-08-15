@@ -225,120 +225,127 @@
         }
 
         function checkDeck() {
-     const resultsDiv = document.getElementById('deckResults');
-     if (!isDbLoaded) {
-         resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
-         return;
-     }
+    const resultsDiv = document.getElementById('deckResults');
+    if (!isDbLoaded) {
+        resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
+        return;
+    }
 
-     const fileInput = document.getElementById('deckFile');
-     const textInput = document.getElementById('deckTextInput').value.trim();
+    const fileInput = document.getElementById('deckFile');
+    const textInput = document.getElementById('deckTextInput');
+    const textValue = textInput.value.trim();
 
-     if (!fileInput.files[0] && !textInput) {
-         resultsDiv.innerHTML = 'Please select a file or paste a decklist first.';
-         return;
-     }
+    if (!fileInput.files[0] && !textValue) {
+        resultsDiv.innerHTML = 'Please select a file or paste a decklist first.';
+        return;
+    }
 
-     if (fileInput.files[0]) {
-         const reader = new FileReader();
-         reader.onload = function(e) {
-             processDeckText(e.target.result);
-         };
-         reader.readAsText(fileInput.files[0]);
-     } else {
-         processDeckText(textInput);
-     }
- }
+    if (fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            processDeckText(e.target.result);
+            // Clear both inputs after successful file read
+            fileInput.value = '';
+            textInput.value = '';
+        };
+        reader.readAsText(fileInput.files[0]);
+    } else {
+        processDeckText(textValue);
+        // Clear both inputs after processing text
+        fileInput.value = '';
+        textInput.value = '';
+    }
+}
 
- function processDeckText(text) {
-     const resultsDiv = document.getElementById('deckResults');
-     const lines = text.split('\n');
-     const cardNames = [];
+function processDeckText(text) {
+    const resultsDiv = document.getElementById('deckResults');
+    const lines = text.split('\n');
+    const cardNames = [];
 
-     lines.forEach(line => {
-         const cleanLine = line.trim();
-         if (!cleanLine || cleanLine.toLowerCase().startsWith('sideboard') || cleanLine.toLowerCase().startsWith('commander')) return;
+    lines.forEach(line => {
+        const cleanLine = line.trim();
+        if (!cleanLine || cleanLine.toLowerCase().startsWith('sideboard') || cleanLine.toLowerCase().startsWith('commander')) return;
 
-         const match = cleanLine.match(/^(\d+x?\s+)?([^<\[\(\*]+)/);
-         if (match && match[2]) {
-             const name = match[2].trim();
-             if (name && !BASIC_LANDS.includes(name.toLowerCase())) {
-                 cardNames.push(name);
-             }
-         }
-     });
+        const match = cleanLine.match(/^(\d+x?\s+)?([^<\[\(\*]+)/);
+        if (match && match[2]) {
+            const name = match[2].trim();
+            if (name && !BASIC_LANDS.includes(name.toLowerCase())) {
+                cardNames.push(name);
+            }
+        }
+    });
 
-     if (cardNames.length === 0) {
-         resultsDiv.innerHTML = 'No valid cards found to check (or deck is only basic lands).';
-         return;
-     }
+    if (cardNames.length === 0) {
+        resultsDiv.innerHTML = 'No valid cards found to check (or deck is only basic lands).';
+        return;
+    }
 
-     let legalCount = 0;
-     let illegalCount = 0;
-     let listHTML = '';
+    let legalCount = 0;
+    let illegalCount = 0;
+    let listHTML = '';
 
-     cardNames.forEach(originalName => {
-         const lowerName = originalName.toLowerCase();
-         const searchName = lowerName.split('/')[0].trim();
+    cardNames.forEach(originalName => {
+        const lowerName = originalName.toLowerCase();
+        const searchName = lowerName.split('/')[0].trim();
 
-         const matchingCard = heritageDatabase.find(card => {
-             const parts = card.n.split(' // ');
+        const matchingCard = heritageDatabase.find(card => {
+            const parts = card.n.split(' // ');
 
-             let matchesFlavor = false;
-             if (card.f) {
-                 if (Array.isArray(card.f)) {
-                     matchesFlavor = card.f.includes(lowerName) || card.f.includes(searchName);
-                 } else {
-                     matchesFlavor = card.f === lowerName || card.f === searchName;
-                 }
-             }
+            let matchesFlavor = false;
+            if (card.f) {
+                if (Array.isArray(card.f)) {
+                    matchesFlavor = card.f.includes(lowerName) || card.f.includes(searchName);
+                } else {
+                    matchesFlavor = card.f === lowerName || card.f === searchName;
+                }
+            }
 
-             return card.n === lowerName || 
-                    card.n === searchName || 
-                    parts.includes(lowerName) || 
-                    parts.includes(searchName) || 
-                    matchesFlavor;
-         });
+            return card.n === lowerName || 
+                   card.n === searchName || 
+                   parts.includes(lowerName) || 
+                   parts.includes(searchName) || 
+                   matchesFlavor;
+        });
 
-         if (matchingCard) {
-             legalCount++;
-             let displayName = originalName;
+        if (matchingCard) {
+            legalCount++;
+            let displayName = originalName;
 
-             let flavorMatched = false;
-             if (matchingCard.f) {
-                 if (Array.isArray(matchingCard.f)) {
-                     flavorMatched = matchingCard.f.includes(lowerName) || matchingCard.f.includes(searchName);
-                 } else {
-                     flavorMatched = matchingCard.f === lowerName || matchingCard.f === searchName;
-                 }
-             }
+            let flavorMatched = false;
+            if (matchingCard.f) {
+                if (Array.isArray(matchingCard.f)) {
+                    flavorMatched = matchingCard.f.includes(lowerName) || matchingCard.f.includes(searchName);
+                } else {
+                    flavorMatched = matchingCard.f === lowerName || matchingCard.f === searchName;
+                }
+            }
 
-             if (flavorMatched) {
-                 const baseNameFormatted = matchingCard.n.replace(/\b\w/g, char => char.toUpperCase());
-                 displayName = `${originalName} (${baseNameFormatted})`;
-             }
+            if (flavorMatched) {
+                const baseNameFormatted = matchingCard.n.replace(/\b\w/g, char => char.toUpperCase());
+                displayName = `${originalName} (${baseNameFormatted})`;
+            }
 
-             listHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
-         } else {
-             illegalCount++;
-             const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(searchName)}%22`;
-             listHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${originalName}</a></div>`;
-         }
-     });
+            listHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
+        } else {
+            illegalCount++;
+            const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(searchName)}%22`;
+            listHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${originalName}</a></div>`;
+        }
+    });
 
-     let summaryHTML = `<h3>Legality Report</h3>`;
-     summaryHTML += `<p style="font-size: 1.1rem; border-bottom: 1px solid #444; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-         <strong>Total Checked:</strong> ${cardNames.length} &nbsp;|&nbsp; 
-         <span class="legal">Legal: ${legalCount}</span> &nbsp;|&nbsp; 
-         <span class="illegal">Illegal: ${illegalCount}</span>
-     </p>`;
+    let summaryHTML = `<h3>Legality Report</h3>`;
+    summaryHTML += `<p style="font-size: 1.1rem; border-bottom: 1px solid #444; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+        <strong>Total Checked:</strong> ${cardNames.length} &nbsp;|&nbsp; 
+        <span class="legal">Legal: ${legalCount}</span> &nbsp;|&nbsp; 
+        <span class="illegal">Illegal: ${illegalCount}</span>
+    </p>`;
 
-     resultsDiv.innerHTML = summaryHTML + listHTML;
+    resultsDiv.innerHTML = summaryHTML + listHTML;
 
-     if (illegalCount === 0) {
-         resultsDiv.innerHTML += '<h4 class="legal" style="margin-top: 1.5rem; text-align: center;">All non-basic cards are Heritage Legal!</h4>';
-     }
- }
+    if (illegalCount === 0) {
+        resultsDiv.innerHTML += '<h4 class="legal" style="margin-top: 1.5rem; text-align: center;">All non-basic cards are Heritage Legal!</h4>';
+    }
+}
  </script>
 </body>
 </html>

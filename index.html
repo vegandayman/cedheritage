@@ -1,350 +1,533 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heritage Format Checker</title>
-    <style>
-        body { 
-            font-family: sans-serif; 
-            margin: 2rem auto; 
-            max-width: 800px; 
-            background: #121212; 
-            color: #e0e0e0;
-        }
-        h1, h2 { color: #ffffff; }
-        section { 
-            margin-bottom: 2rem; 
-            padding: 1.5rem; 
-            border: 1px solid #333; 
-            border-radius: 8px;
-            background: #1e1e1e;
-        }
-        input[type="text"], select, input[type="file"] { 
-            margin-bottom: 1rem; 
-            width: 100%; 
-            padding: 0.75rem; 
-            box-sizing: border-box;
-            background: #2a2a2a;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 4px;
-        }
-        .search-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        @media(min-width: 600px) {
-            .search-row {
-                display: flex;
-                gap: 10px;
-            }
-            .search-row > * {
-                flex: 1;
-            }
-        }
-        button { 
-            padding: 0.75rem 1.5rem; 
-            cursor: pointer; 
-            background: #007acc; 
-            color: white; 
-            border: none; 
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        button:hover { background: #005f9e; }
-        .load-btn {
-            display: block;
-            width: 100%;
-            font-size: 1.5rem;
-            padding: 1.5rem;
-            background: #4caf50;
-            margin-bottom: 2rem;
-        }
-        .load-btn:hover { background: #43a047; }
-        .load-btn:disabled { background: #333; color: #888; cursor: not-allowed; }
-        .result-box { 
-            margin-top: 1.5rem; 
-            padding: 1rem; 
-            background: #2a2a2a; 
-            border-radius: 4px;
-            min-height: 50px; 
-            border: 1px solid #444;
-        }
-        .legal { color: #4caf50; font-weight: bold; }
-        .illegal { color: #f44336; font-weight: bold; }
-        .deck-item { margin-bottom: 0.25rem; border-bottom: 1px solid #444; padding-bottom: 0.25rem; }
-        
-        .deck-item a {
-            color: #e0e0e0;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        .deck-item a:hover {
-            color: #007acc;
-            text-decoration: underline;
-        }
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Heritage Format Checker</title>
+ <style>
+ body { 
+font-family: sans-serif; 
+margin: 2rem auto; 
+max-width: 800px; 
+background: #121212; 
+color: #e0e0e0;
+ }
+ h1, h2 { color: #ffffff; }
+ section { 
+margin-bottom: 2rem; 
+padding: 1.5rem; 
+border: 1px solid #333; 
+border-radius: 8px;
+ background: #1e1e1e;
+ }
+ input[type="text"], select, input[type="file"], textarea { 
+margin-bottom: 1rem; 
+width: 100%; 
+padding: 0.75rem; 
+box-sizing: border-box;
+ background: #2a2a2a;
+ color: #fff;
+ border: 1px solid #444;
+ border-radius: 4px;
+ }
+ .search-controls {
+ display: flex;
+ flex-direction: column;
+ gap: 5px;
+ }
+ @media(min-width: 600px) {
+ .search-row {
+ display: flex;
+ gap: 10px;
+ }
+ .search-row > * {
+ flex: 1;
+ }
+ }
+ button { 
+padding: 0.75rem 1.5rem; 
+cursor: pointer; 
+background: #007acc; 
+color: white; 
+border: none; 
+border-radius: 4px;
+ font-weight: bold;
+ }
+ button:hover { background: #005f9e; }
+  .scryfall-btn {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  background: #333;
+  color: #e0e0e0;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  border: 1px solid #555;
+  transition: background 0.2s, color 0.2s;
+}
+.scryfall-btn:hover {
+  background: #444;
+  color: #ffffff;
+}
+ .load-btn {
+ display: block;
+ width: 100%;
+ font-size: 1.5rem;
+ padding: 1.5rem;
+ background: #4caf50;
+ margin-bottom: 2rem;
+ }
+ .load-btn:hover { background: #43a047; }
+ .load-btn:disabled { background: #333; color: #888; cursor: not-allowed; }
+ .result-box { 
+margin-top: 1.5rem; 
+padding: 1rem; 
+background: #2a2a2a; 
+border-radius: 4px;
+ min-height: 50px; 
+border: 1px solid #444;
+ }
+ .legal { color: #4caf50; font-weight: bold; }
+ .illegal { color: #f44336; font-weight: bold; }
+ .deck-item { margin-bottom: 0.25rem; border-bottom: 1px solid #444; padding-bottom: 0.25rem; }
+ 
+.deck-item a {
+ color: #e0e0e0;
+ text-decoration: none;
+ transition: color 0.2s;
+ }
+ .deck-item a:hover {
+ color: #007acc;
+ text-decoration: underline;
+ }
 
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        img.card-image { width: 100%; border-radius: 4.75%; transition: transform 0.2s; }
-        img.card-image:hover { transform: scale(1.05); }
-    </style>
+ .gallery {
+ display: grid;
+ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+ gap: 15px;
+ margin-top: 15px;
+ }
+ img.card-image { width: 100%; border-radius: 4.75%; transition: transform 0.2s; }
+ img.card-image:hover { transform: scale(1.05); }
+
+ /* Typeahead & Tag Styling */
+ .typeahead-container {
+ position: relative;
+ margin-bottom: 1rem;
+ }
+ .tags-container {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin-bottom: 8px;
+ }
+ .tag {
+ display: inline-flex;
+ align-items: center;
+ background: #007acc;
+ color: #fff;
+ padding: 0.25rem 0.5rem;
+ border-radius: 4px;
+ font-size: 0.9rem;
+ font-weight: bold;
+ }
+ .tag .remove-tag {
+ background: none;
+ border: none;
+ color: #fff;
+ margin-left: 6px;
+ cursor: pointer;
+ font-weight: bold;
+ padding: 0;
+ font-size: 1rem;
+ }
+ .tag .remove-tag:hover {
+ color: #ff9999;
+ background: none;
+ }
+ .suggestions-list {
+ position: absolute;
+ top: 100%;
+ left: 0;
+ right: 0;
+ background: #2a2a2a;
+ border: 1px solid #444;
+ border-top: none;
+ border-radius: 0 0 4px 4px;
+ max-height: 180px;
+ overflow-y: auto;
+ z-index: 1000;
+ margin: 0;
+ padding: 0;
+ list-style: none;
+ display: none;
+ }
+ .suggestions-list li {
+ padding: 0.5rem 0.75rem;
+ cursor: pointer;
+ border-bottom: 1px solid #333;
+ }
+ .suggestions-list li:hover {
+ background: #3a3a3a;
+ color: #007acc;
+ }
+ </style>
 </head>
 <body>
-    <h1>Heritage Format Tools</h1>
+  <h1>Heritage Format Tools</h1>
 
-    <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">LOAD DATABASE</button>
-    <div id="dbStatus" style="margin-bottom: 2rem; text-align: center; font-weight: bold;"></div>
+  <a href="https://scryfall.com/search?q=f%3Acommander+%28in%3Acore+OR+in%3Aexpansion%29+-is%3Aub+-o%3A%22your+commander%22" target="_blank" rel="noopener noreferrer" class="scryfall-btn">
+    View Full Heritage Search on Scryfall
+  </a>
 
-    <section>
-        <h2>1. Search Database</h2>
-        <div class="search-controls">
-            <div class="search-row">
-                <input type="text" id="searchInput" placeholder="Name keyword (e.g., Lightning)">
-                <select id="typeSelect">
-                    <option value="">All Types</option>
-                    <option value="artifact">Artifact</option>
-                    <option value="creature">Creature</option>
-                    <option value="enchantment">Enchantment</option>
-                    <option value="instant">Instant</option>
-                    <option value="land">Land</option>
-                    <option value="planeswalker">Planeswalker</option>
-                    <option value="sorcery">Sorcery</option>
-                </select>
-            </div>
-            <input type="text" id="oracleInput" placeholder="Rules text keyword (e.g., proliferate, draw a card)">
-        </div>
-        <button onclick="searchCard()">Search Heritage</button>
-        <div id="searchResults" class="result-box"></div>
-    </section>
-
-    <section>
-     <h2>2. Decklist Legality Checker</h2>
-     <p>Upload a standard text decklist or paste your list below. Quantities and set codes will be stripped automatically. Basic lands are ignored.</p>
-     <input type="file" id="deckFile" accept=".txt">
-     <textarea id="deckTextInput" rows="8" placeholder="Paste your decklist here (e.g., 1 Lightning Bolt)"></textarea>
-     <button onclick="checkDeck()">Check Legality</button>
-     <div id="deckResults" class="result-box"></div>
+  <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">LOAD DATABASE</button>
+  <div id="dbStatus" style="margin-bottom: 2rem; text-align: center; font-weight: bold;"></div>
+ <section>
+ <h2>1. Search Database</h2>
+ <div class="search-controls">
+ <div class="search-row">
+ <input type="text" id="searchInput" placeholder="Name keyword (e.g., Lightning)">
+ 
+ <!-- Typeahead and Tag Input Replacement -->
+ <div class="typeahead-container">
+ <div id="tagsContainer" class="tags-container"></div>
+ <input type="text" id="typeaheadInput" placeholder="Add card type/subtype (e.g., Goblin, Instant)..." autocomplete="off">
+ <ul id="suggestionsList" class="suggestions-list"></ul>
+ </div>
+ </div>
+ <input type="text" id="oracleInput" placeholder="Rules text keyword (e.g., proliferate, draw a card)">
+ </div>
+ <button onclick="searchCard()">Search Heritage</button>
+ <div id="searchResults" class="result-box"></div>
  </section>
 
-    <script>
-        const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
-        let heritageDatabase = [];
-        let isDbLoaded = false;
+ <section>
+ <h2>2. Decklist Legality Checker</h2>
+ <p>Upload a standard text decklist or paste your list below. Quantities and set codes will be stripped automatically. Basic lands are ignored.</p>
+ <input type="file" id="deckFile" accept=".txt">
+ <textarea id="deckTextInput" rows="8" placeholder="Paste your decklist here (e.g., 1 Lightning Bolt)"></textarea>
+ <button onclick="checkDeck()">Check Legality</button>
+ <div id="deckResults" class="result-box"></div>
+ </section>
 
-        async function loadDatabase() {
-            const btn = document.getElementById('loadDbBtn');
-            const status = document.getElementById('dbStatus');
-            
-            btn.disabled = true;
-            btn.innerText = "LOADING...";
-            status.innerHTML = "Fetching local database file...";
+ <script>
+ const BASIC_LANDS = ['plains', 'island', 'swamp', 'mountain', 'forest', 'snow-covered plains', 'snow-covered island', 'snow-covered swamp', 'snow-covered mountain', 'snow-covered forest'];
+ let heritageDatabase = [];
+ let isDbLoaded = false;
+ let allAvailableTypes = [];
+ let selectedTypeTags = [];
 
-            try {
-                // Add a cache-buster parameter to ensure we get the absolute latest JSON
-                const response = await fetch('./heritage_cards.json?v=' + new Date().getTime());
-                if (!response.ok) throw new Error('Database file not found. Ensure heritage_cards.json is uploaded.');
-                
-                const jsonPayload = await response.json();
-                
-                if (Array.isArray(jsonPayload)) {
-                    heritageDatabase = jsonPayload;
-                } else {
-                    heritageDatabase = jsonPayload.cards || [];
-                    if (jsonPayload.lastUpdated) {
-                        window.dbLastUpdated = new Date(jsonPayload.lastUpdated).toLocaleString();
-                    }
-                }
-                
-                isDbLoaded = true;
-                
-                btn.style.display = 'none';
-                let dateString = window.dbLastUpdated ? ` (Updated: ${window.dbLastUpdated})` : '';
-                status.innerHTML = `<span class="legal">Database Loaded: ${heritageDatabase.length} entries ready${dateString}.</span>`;
-            } catch (error) {
-                console.error("Failed to load heritage_cards.json:", error);
-                status.innerHTML = `<span class="illegal">Error: ${error.message}</span>`;
-                btn.disabled = false;
-                btn.innerText = "RETRY LOAD DATABASE";
-            }
-        }
+ async function loadDatabase() {
+ const btn = document.getElementById('loadDbBtn');
+ const status = document.getElementById('dbStatus');
+ 
+btn.disabled = true;
+ btn.innerText = "LOADING...";
+ status.innerHTML = "Fetching local database file...";
 
-        function searchCard() {
-            const resultsDiv = document.getElementById('searchResults');
-            if (!isDbLoaded) {
-                resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
-                return;
-            }
+ try {
+ const response = await fetch('./heritage_cards.json?v=' + new Date().getTime());
+ if (!response.ok) throw new Error('Database file not found. Ensure heritage_cards.json is uploaded.');
+ 
+const jsonPayload = await response.json();
+ 
+if (Array.isArray(jsonPayload)) {
+ heritageDatabase = jsonPayload;
+ } else {
+ heritageDatabase = jsonPayload.cards || [];
+ if (jsonPayload.lastUpdated) {
+ window.dbLastUpdated = new Date(jsonPayload.lastUpdated).toLocaleString();
+ }
+ }
+ 
+isDbLoaded = true;
+ buildTypeIndex();
+ initTypeahead();
+ 
+btn.style.display = 'none';
+ let dateString = window.dbLastUpdated ? ` (Updated: ${window.dbLastUpdated})` : '';
+ status.innerHTML = `<span class="legal">Database Loaded: ${heritageDatabase.length} entries ready${dateString}.</span>`;
+ } catch (error) {
+ console.error("Failed to load heritage_cards.json:", error);
+ status.innerHTML = `<span class="illegal">Error: ${error.message}</span>`;
+ btn.disabled = false;
+ btn.innerText = "RETRY LOAD DATABASE";
+ }
+ }
 
-            const nameInput = document.getElementById('searchInput').value.trim().toLowerCase();
-            const selectedType = document.getElementById('typeSelect').value.toLowerCase();
-            const oracleInput = document.getElementById('oracleInput').value.trim().toLowerCase();
+ function buildTypeIndex() {
+ const typeSet = new Set();
+ heritageDatabase.forEach(card => {
+ if (card.t) {
+ // Scryfall type lines typically look like "Legendary Creature — Goblin Wizard" or "Instant"
+ // Split by standard type line separators (em-dashes, hyphens, spaces)
+ const cleanTypes = card.t.replace(/[—−-]/g, ' ').split(/\s+/);
+ cleanTypes.forEach(t => {
+ const trimmed = t.trim().toLowerCase();
+ if (trimmed && trimmed !== '—') {
+ typeSet.add(trimmed);
+ }
+ });
+ }
+ });
+ allAvailableTypes = Array.from(typeSet).sort();
+ }
 
-            const matches = heritageDatabase.filter(card => {
-                let matchesFlavor = false;
-                if (card.f) {
-                    // Fail-safe: handles flavor names whether the JSON stores them as arrays or strings
-                    if (Array.isArray(card.f)) {
-                        matchesFlavor = card.f.some(flavor => flavor.includes(nameInput));
-                    } else {
-                        matchesFlavor = card.f.includes(nameInput);
-                    }
-                }
+ function initTypeahead() {
+ const input = document.getElementById('typeaheadInput');
+ const list = document.getElementById('suggestionsList');
 
-                const matchesName = nameInput === '' || card.n.includes(nameInput) || matchesFlavor;
-                const matchesType = selectedType === '' || card.t.includes(selectedType);
-                const matchesOracle = oracleInput === '' || (card.o && card.o.includes(oracleInput));
-                return matchesName && matchesType && matchesOracle;
-            });
+ input.addEventListener('input', function() {
+ const query = this.value.trim().toLowerCase();
+ list.innerHTML = '';
+ 
+if (!query) {
+ list.style.display = 'none';
+ return;
+ }
 
-            if (matches.length === 0) {
-                resultsDiv.innerHTML = `<span class="illegal">No legal cards found matching your criteria.</span>`;
-                return;
-            }
+ const matches = allAvailableTypes.filter(t => t.includes(query) && !selectedTypeTags.includes(t)).slice(0, 10);
 
-            const displayLimit = 50;
-            let html = `<p class="legal">Found ${matches.length} matching entry/entries. ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p><div class="gallery">`;
-            
-            matches.slice(0, displayLimit).forEach(card => {
-                if (card.i) {
-                    html += `<a href="${card.u}" target="_blank"><img src="${card.i}" class="card-image" alt="${card.n}"></a>`;
-                } else {
-                    const displayName = card.n.replace(/\b\w/g, l => l.toUpperCase());
-                    html += `<div><a href="${card.u}" target="_blank" style="color: #007acc; text-decoration: none;">${displayName}</a></div>`;
-                }
-            });
-            html += '</div>';
-            
-            resultsDiv.innerHTML = html;
-        }
+ if (matches.length === 0) {
+ list.style.display = 'none';
+ return;
+ }
 
-        function checkDeck() {
-    const resultsDiv = document.getElementById('deckResults');
-    if (!isDbLoaded) {
-        resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
-        return;
-    }
+ matches.forEach(match => {
+ const li = document.createElement('li');
+ li.textContent = match;
+ li.addEventListener('click', function() {
+ addTag(match);
+ input.value = '';
+ list.style.display = 'none';
+ });
+ list.appendChild(li);
+ });
 
-    const fileInput = document.getElementById('deckFile');
-    const textInput = document.getElementById('deckTextInput');
-    const textValue = textInput.value.trim();
+ list.style.display = 'block';
+ });
 
-    if (!fileInput.files[0] && !textValue) {
-        resultsDiv.innerHTML = 'Please select a file or paste a decklist first.';
-        return;
-    }
+ document.addEventListener('click', function(e) {
+ if (!e.target.closest('.typeahead-container')) {
+ list.style.display = 'none';
+ }
+ });
+ }
 
-    if (fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            processDeckText(e.target.result);
-            // Clear both inputs after successful file read
-            fileInput.value = '';
-            textInput.value = '';
-        };
-        reader.readAsText(fileInput.files[0]);
-    } else {
-        processDeckText(textValue);
-        // Clear both inputs after processing text
-        fileInput.value = '';
-        textInput.value = '';
-    }
+ function addTag(type) {
+ if (!selectedTypeTags.includes(type)) {
+ selectedTypeTags.push(type);
+ renderTags();
+ }
+ }
+
+ function removeTag(type) {
+ selectedTypeTags = selectedTypeTags.filter(t => t !== type);
+ renderTags();
+ }
+
+ function renderTags() {
+ const container = document.getElementById('tagsContainer');
+ container.innerHTML = '';
+ selectedTypeTags.forEach(tag => {
+ const tagEl = document.createElement('div');
+ tagEl.className = 'tag';
+ tagEl.innerHTML = `${tag} <button class="remove-tag" type="button" onclick="removeTag('${tag}')">&times;</button>`;
+ container.appendChild(tagEl);
+ });
+ }
+
+ function searchCard() {
+ const resultsDiv = document.getElementById('searchResults');
+ if (!isDbLoaded) {
+ resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
+ return;
+ }
+
+ const rawNameInput = document.getElementById('searchInput').value.trim();
+ const nameInput = rawNameInput.toLowerCase();
+ const rawOracleInput = document.getElementById('oracleInput').value.trim();
+ const oracleInput = rawOracleInput.toLowerCase();
+
+ const matches = heritageDatabase.filter(card => {
+ let matchesFlavor = false;
+ if (card.f) {
+ if (Array.isArray(card.f)) {
+ matchesFlavor = card.f.some(flavor => flavor.includes(nameInput));
+ } else {
+ matchesFlavor = card.f.includes(nameInput);
+ }
+ }
+
+ const matchesName = nameInput === '' || card.n.includes(nameInput) || matchesFlavor;
+ 
+ // Strict AND logic for multiple type tags
+ const matchesTypes = selectedTypeTags.every(tag => card.t && card.t.toLowerCase().includes(tag));
+
+ const matchesOracle = oracleInput === '' || (card.o && card.o.includes(oracleInput));
+ 
+ return matchesName && matchesTypes && matchesOracle;
+ });
+
+ if (matches.length === 0) {
+ resultsDiv.innerHTML = `<span class="illegal">No legal cards found matching your criteria.</span>`;
+ return;
+ }
+
+ // Construct Scryfall URL
+ const baseHeritageQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"';
+ let scryfallQueryParts = [baseHeritageQuery];
+
+ if (rawNameInput) scryfallQueryParts.push(`"${rawNameInput}"`);
+ selectedTypeTags.forEach(tag => scryfallQueryParts.push(`t:"${tag}"`));
+ if (rawOracleInput) scryfallQueryParts.push(`o:"${rawOracleInput}"`);
+
+ const finalQuery = scryfallQueryParts.join(' ');
+ const scryfallUrl = `https://scryfall.com/search?q=${encodeURIComponent(finalQuery)}`;
+
+ const displayLimit = 50;
+ 
+ let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">`;
+ html += `<p class="legal" style="margin: 0;">Found ${matches.length} matching entry/entries. ${matches.length > displayLimit ? `Displaying first ${displayLimit}.` : ''}</p>`;
+ html += `<a href="${scryfallUrl}" target="_blank" rel="noopener noreferrer" class="scryfall-btn" style="margin-bottom: 0;">Open these results in Scryfall</a>`;
+ html += `</div>`;
+ 
+ html += `<div class="gallery">`;
+ 
+ matches.slice(0, displayLimit).forEach(card => {
+ if (card.i) {
+ html += `<a href="${card.u}" target="_blank"><img src="${card.i}" class="card-image" alt="${card.n}"></a>`;
+ } else {
+ const displayName = card.n.replace(/\b\w/g, l => l.toUpperCase());
+ html += `<div><a href="${card.u}" target="_blank" style="color: #007acc; text-decoration: none;">${displayName}</a></div>`;
+ }
+ });
+ html += '</div>';
+ 
+ resultsDiv.innerHTML = html;
+ }
+
+ function checkDeck() {
+ const resultsDiv = document.getElementById('deckResults');
+ if (!isDbLoaded) {
+ resultsDiv.innerHTML = '<span class="illegal">You must load the database first.</span>';
+ return;
+ }
+
+ const fileInput = document.getElementById('deckFile');
+ const textInput = document.getElementById('deckTextInput');
+ const textValue = textInput.value.trim();
+
+ if (!fileInput.files[0] && !textValue) {
+ resultsDiv.innerHTML = 'Please select a file or paste a decklist first.';
+ return;
+ }
+
+ if (fileInput.files[0]) {
+ const reader = new FileReader();
+ reader.onload = function(e) {
+ processDeckText(e.target.result);
+ fileInput.value = '';
+ textInput.value = '';
+ };
+ reader.readAsText(fileInput.files[0]);
+ } else {
+ processDeckText(textValue);
+ fileInput.value = '';
+ textInput.value = '';
+ }
 }
 
 function processDeckText(text) {
-    const resultsDiv = document.getElementById('deckResults');
-    const lines = text.split('\n');
-    const cardNames = [];
+ const resultsDiv = document.getElementById('deckResults');
+ const lines = text.split('\n');
+ const cardNames = [];
 
-    lines.forEach(line => {
-        const cleanLine = line.trim();
-        if (!cleanLine || cleanLine.toLowerCase().startsWith('sideboard') || cleanLine.toLowerCase().startsWith('commander')) return;
+ lines.forEach(line => {
+ const cleanLine = line.trim();
+ if (!cleanLine || cleanLine.toLowerCase().startsWith('sideboard') || cleanLine.toLowerCase().startsWith('commander')) return;
 
-        const match = cleanLine.match(/^(\d+x?\s+)?([^<\[\(\*]+)/);
-        if (match && match[2]) {
-            const name = match[2].trim();
-            if (name && !BASIC_LANDS.includes(name.toLowerCase())) {
-                cardNames.push(name);
-            }
-        }
-    });
+ const match = cleanLine.match(/^(\d+x?\s+)?([^<\[\(\*]+)/);
+ if (match && match[2]) {
+ const name = match[2].trim();
+ if (name && !BASIC_LANDS.includes(name.toLowerCase())) {
+ cardNames.push(name);
+ }
+ }
+ });
 
-    if (cardNames.length === 0) {
-        resultsDiv.innerHTML = 'No valid cards found to check (or deck is only basic lands).';
-        return;
-    }
+ if (cardNames.length === 0) {
+ resultsDiv.innerHTML = 'No valid cards found to check (or deck is only basic lands).';
+ return;
+ }
 
-    let legalCount = 0;
-    let illegalCount = 0;
-    let listHTML = '';
+ let legalCount = 0;
+ let illegalCount = 0;
+ let listHTML = '';
 
-    cardNames.forEach(originalName => {
-        const lowerName = originalName.toLowerCase();
-        const searchName = lowerName.split('/')[0].trim();
+ cardNames.forEach(originalName => {
+ const lowerName = originalName.toLowerCase();
+ const searchName = lowerName.split('/')[0].trim();
 
-        const matchingCard = heritageDatabase.find(card => {
-            const parts = card.n.split(' // ');
+ const matchingCard = heritageDatabase.find(card => {
+ const parts = card.n.split(' // ');
 
-            let matchesFlavor = false;
-            if (card.f) {
-                if (Array.isArray(card.f)) {
-                    matchesFlavor = card.f.includes(lowerName) || card.f.includes(searchName);
-                } else {
-                    matchesFlavor = card.f === lowerName || card.f === searchName;
-                }
-            }
+ let matchesFlavor = false;
+ if (card.f) {
+ if (Array.isArray(card.f)) {
+ matchesFlavor = card.f.includes(lowerName) || card.f.includes(searchName);
+ } else {
+ matchesFlavor = card.f === lowerName || card.f === searchName;
+ }
+ }
 
-            return card.n === lowerName || 
-                   card.n === searchName || 
-                   parts.includes(lowerName) || 
-                   parts.includes(searchName) || 
-                   matchesFlavor;
-        });
+ return card.n === lowerName || 
+card.n === searchName || 
+parts.includes(lowerName) || 
+parts.includes(searchName) || 
+matchesFlavor;
+ });
 
-        if (matchingCard) {
-            legalCount++;
-            let displayName = originalName;
+ if (matchingCard) {
+ legalCount++;
+ let displayName = originalName;
 
-            let flavorMatched = false;
-            if (matchingCard.f) {
-                if (Array.isArray(matchingCard.f)) {
-                    flavorMatched = matchingCard.f.includes(lowerName) || matchingCard.f.includes(searchName);
-                } else {
-                    flavorMatched = matchingCard.f === lowerName || matchingCard.f === searchName;
-                }
-            }
+ let flavorMatched = false;
+ if (matchingCard.f) {
+ if (Array.isArray(matchingCard.f)) {
+ flavorMatched = matchingCard.f.includes(lowerName) || matchingCard.f.includes(searchName);
+ } else {
+ flavorMatched = matchingCard.f === lowerName || matchingCard.f === searchName;
+ }
+ }
 
-            if (flavorMatched) {
-                const baseNameFormatted = matchingCard.n.replace(/\b\w/g, char => char.toUpperCase());
-                displayName = `${originalName} (${baseNameFormatted})`;
-            }
+ if (flavorMatched) {
+ const baseNameFormatted = matchingCard.n.replace(/\b\w/g, char => char.toUpperCase());
+ displayName = `${originalName} (${baseNameFormatted})`;
+ }
 
-            listHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
-        } else {
-            illegalCount++;
-            const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(searchName)}%22`;
-            listHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${originalName}</a></div>`;
-        }
-    });
+ listHTML += `<div class="deck-item"><span class="legal">✓ LEGAL:</span> <a href="${matchingCard.u}" target="_blank">${displayName}</a></div>`;
+ } else {
+ illegalCount++;
+ const searchUrl = `https://scryfall.com/search?q=!%22${encodeURIComponent(searchName)}%22`;
+ listHTML += `<div class="deck-item"><span class="illegal">✗ ILLEGAL:</span> <a href="${searchUrl}" target="_blank">${originalName}</a></div>`;
+ }
+ });
 
-    let summaryHTML = `<h3>Legality Report</h3>`;
-    summaryHTML += `<p style="font-size: 1.1rem; border-bottom: 1px solid #444; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-        <strong>Total Checked:</strong> ${cardNames.length} &nbsp;|&nbsp; 
-        <span class="legal">Legal: ${legalCount}</span> &nbsp;|&nbsp; 
-        <span class="illegal">Illegal: ${illegalCount}</span>
-    </p>`;
+ let summaryHTML = `<h3>Legality Report</h3>`;
+ summaryHTML += `<p style="font-size: 1.1rem; border-bottom: 1px solid #444; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+ <strong>Total Checked:</strong> ${cardNames.length} &nbsp;|&nbsp; 
+<span class="legal">Legal: ${legalCount}</span> &nbsp;|&nbsp; 
+<span class="illegal">Illegal: ${illegalCount}</span>
+ </p>`;
 
-    resultsDiv.innerHTML = summaryHTML + listHTML;
+ resultsDiv.innerHTML = summaryHTML + listHTML;
 
-    if (illegalCount === 0) {
-        resultsDiv.innerHTML += '<h4 class="legal" style="margin-top: 1.5rem; text-align: center;">All non-basic cards are Heritage Legal!</h4>';
-    }
+ if (illegalCount === 0) {
+ resultsDiv.innerHTML += '<h4 class="legal" style="margin-top: 1.5rem; text-align: center;">All non-basic cards are Heritage Legal!</h4>';
+ }
 }
  </script>
 </body>

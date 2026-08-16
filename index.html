@@ -176,13 +176,21 @@ border: 1px solid #444;
  </style>
 </head>
 <body>
-  <h1>Heritage Format Tools</h1>
+ <h1>EDHeritage Search and Deckcheck Tools</h1>
 
-  <a href="https://scryfall.com/search?q=f%3Acommander+%28in%3Acore+OR+in%3Aexpansion%29+-is%3Aub+-o%3A%22your+commander%22" target="_blank" rel="noopener noreferrer" class="scryfall-btn">
-    View Full Heritage Search on Scryfall
-  </a>
+ <a href="instructions.html" target="_blank" class="scryfall-btn">
+ Instructions & Features
+ </a>
 
-  <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">LOAD DATABASE</button>
+<a href="explainer.html" target="_blank" class="scryfall-btn">
+ EDheritage Explainer
+ </a>
+
+ <a href="https://scryfall.com/search?q=f%3Acommander+%28in%3Acore+OR+in%3Aexpansion%29+-is%3Aub+-o%3A%22your+commander%22" target="_blank" rel="noopener noreferrer" class="scryfall-btn">
+ View Full EDHeritage Card Pool on Scryfall
+ </a>
+
+  <button id="loadDbBtn" class="load-btn" onclick="loadDatabase()">CLICK FIRST TO LOAD DATABASE</button>
   <div id="dbStatus" style="margin-bottom: 2rem; text-align: center; font-weight: bold;"></div>
  <section>
  <h2>1. Search Database</h2>
@@ -199,7 +207,7 @@ border: 1px solid #444;
  </div>
  <input type="text" id="oracleInput" placeholder="Rules text keyword (e.g., proliferate, draw a card)">
  </div>
- <button onclick="searchCard()">Search Heritage</button>
+ <button onclick="searchCard()">EDHeritage Search</button>
  <div id="searchResults" class="result-box"></div>
  </section>
 

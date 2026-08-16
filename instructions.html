@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heritage Format Checker - Instructions</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            margin: 2rem auto; 
+            max-width: 800px; 
+            background: #121212; 
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+        h1, h2, h3 { color: #ffffff; }
+        section { 
+            margin-bottom: 2rem; 
+            padding: 1.5rem; 
+            border: 1px solid #333; 
+            border-radius: 8px;
+            background: #1e1e1e;
+        }
+        ul, ol {
+            margin-left: 1.5rem;
+            padding-left: 0;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        .nav-btn {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 1rem;
+            background: #333;
+            color: #e0e0e0;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid #555;
+            transition: background 0.2s, color 0.2s;
+        }
+        .nav-btn:hover {
+            background: #444;
+            color: #ffffff;
+        }
+        strong {
+            color: #007acc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Heritage Format Checker: Documentation and Instructions</h1>
+    
+    <a href="index.html" class="nav-btn">← Back to Checker</a>
+
+    <section>
+        <h2>Overview</h2>
+        <p>The Heritage Format Checker is a client-side application designed to verify card and deck legality for the Heritage format. It relies on a pre-compiled JSON database of legal cards, ensuring fast, zero-backend performance.</p>
+    </section>
+
+    <section>
+        <h2>Instructions: Searching the Database</h2>
+        <ol>
+            <li><strong>Initialize the App:</strong> Click the "LOAD DATABASE" button upon arriving at the page to fetch the latest legal card pool.</li>
+            <li><strong>Name Search:</strong> Enter keywords in the "Name keyword" field.</li>
+            <li><strong>Type Filtering:</strong> Begin typing in the "Add card type/subtype" field. Select from the dropdown suggestions to add specific types as tags. You can add multiple tags to narrow down results.</li>
+            <li><strong>Oracle Text:</strong> Enter rules text keywords (e.g., "proliferate") into the Rules text input field to find specific mechanics.</li>
+            <li><strong>View Results:</strong> Click "Search Heritage". The application will return up to 50 matching cards. Clicking any card image will open its corresponding Scryfall entry in a new tab. Once a search is run, there is an "open these results in Scryfall" button if you want to explore your specific search query beyond the displayed 50 limit.</li>
+        </ol>
+    </section>
+
+    <section>
+        <h2>Instructions: Decklist Legality Checker</h2>
+        <ol>
+            <li><strong>Input Your Deck:</strong> Either click "Choose File" to upload a <code>.txt</code> decklist, or paste your list directly into the provided text area.</li>
+            <li><strong>Formatting Requirements:</strong> Standard decklist formatting is accepted. The system automatically strips card quantities and set codes.</li>
+            <li><strong>Ignored Elements:</strong> The checker will skip over lines starting with "Sideboard" or "Commander". Basic lands (Plains, Island, Swamp, Mountain, Forest, and their snow-covered variants) are bypassed automatically.</li>
+            <li><strong>Review the Report:</strong> Click "Check Legality". The tool provides a summary of total cards checked, with counts for both legal and illegal entries.</li>
+            <li><strong>Identify Illegal Cards:</strong> Illegal cards are highlighted in red and include a link to search for the card on Scryfall for further investigation.</li>
+            <li><strong>Flavor Name Display:</strong> If a valid card was submitted under its Universes Beyond flavor name, the report will display both the submitted name and the base premier name in brackets.</li>
+        </ol>
+    </section>
+
+    <section>
+        <h2>Feature List</h2>
+        <ul>
+            <li><strong>Offline Database Loading:</strong> Loads a static, pre-compiled JSON file (<code>heritage_cards.json</code>) directly into the browser.</li>
+            <li><strong>Comprehensive Database:</strong> The database exclusively includes Commander-legal cards from core and expansion sets, explicitly filtering out Universes Beyond cards.</li>
+            <li><strong>Promotional Reskin Support:</strong> Universes Beyond cards that are purely promotional reskins of legal premier cards (flavor names) are automatically recognized as legal.</li>
+            <li><strong>Advanced Card Search:</strong> Filter the legal card pool by Name, Oracle text, and Type/Subtype.</li>
+            <li><strong>Interactive Type Tags:</strong> An auto-completing typeahead input allows users to stack multiple card types or subtypes (e.g., "Goblin", "Instant") for precise filtering.</li>
+            <li><strong>Decklist Verification:</strong> Check entire decklists for legality by pasting text or uploading a standard <code>.txt</code> file.</li>
+        </ul>
+    </section>
+
+</body>
+</html>

@@ -186,7 +186,7 @@ border: 1px solid #444;
  EDheritage Explainer
  </a>
 
- <a href="https://scryfall.com/search?q=f%3Acommander+%28in%3Acore+OR+in%3Aexpansion%29+-is%3Aub+-o%3A%22your+commander%22" target="_blank" rel="noopener noreferrer" class="scryfall-btn">
+ <a href="https://scryfall.com/search?q=f%3Acommander+-o%3A%22your+commander%22+%28%28in%3Acore+OR+in%3Aexpansion%29+-is%3Aub+%28game%3Apaper%29+OR+set%3Aom1%29" target="_blank" rel="noopener noreferrer" class="scryfall-btn">
  View Full EDHeritage Card Pool on Scryfall
  </a>
 
@@ -385,8 +385,8 @@ if (!query) {
  }
 
  // Construct Scryfall URL
- const baseHeritageQuery = 'f:commander (in:core OR in:expansion) -is:ub -o:"your commander"';
- let scryfallQueryParts = [baseHeritageQuery];
+  const baseHeritageQuery = 'f:commander -o:"your commander" ((in:core OR in:expansion) -is:ub (game:paper) OR set:om1)';
+  let scryfallQueryParts = [baseHeritageQuery];
 
  if (rawNameInput) scryfallQueryParts.push(`"${rawNameInput}"`);
  selectedTypeTags.forEach(tag => scryfallQueryParts.push(`t:"${tag}"`));

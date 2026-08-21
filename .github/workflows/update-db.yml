@@ -21,10 +21,10 @@ jobs:
       - name: Run extraction script
         run: node build-db.js
 
-      - name: Commit and push JSON
+      - name: Commit and push changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add heritage_cards.json
-          git commit -m "Update Heritage legal cards database" || echo "No changes to commit"
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.net'
+          git add heritage_cards.json build-log.json
+          git commit -m "Automated update of database and build log" || echo "No changes to commit"
           git push

@@ -18,15 +18,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Run JavaScript file
-        run: node build-db.js # Replace with your actual script filename
+        run: node build-db.js
 
       - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.net'
-          git add heritage_cards.json
-          git commit -m "Automated update of heritage_cards.json" || echo "No changes to commit"
+          git add heritage_cards.json build-log.json
+          git commit -m "Automated update of database and build log" || echo "No changes to commit"
           git push

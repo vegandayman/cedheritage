@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Build Log - EDHeritage</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            margin: 2rem auto; 
+            max-width: 900px; 
+            background: #121212; 
+            color: #e0e0e0;
+            padding: 0 1rem;
+        }
+        h1 { color: #ffffff; }
+        section { 
+            margin-bottom: 2rem; 
+            padding: 1.5rem; 
+            border: 1px solid #333; 
+            border-radius: 8px;
+            background: #1e1e1e;
+        }
+        .scryfall-btn {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 1rem;
+            background: #333;
+            color: #e0e0e0;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid #555;
+            transition: background 0.2s, color 0.2s;
+        }
+        .scryfall-btn:hover {
+            background: #444;
+            color: #ffffff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            background: #2a2a2a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #444;
+            font-size: 0.95rem;
+        }
+        th {
+            background: #333;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .legal { color: #4caf50; font-weight: bold; }
+        .illegal { color: #f44336; font-weight: bold; }
+        .error-text {
+            color: #ff9999;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Database Build Log</h1>
+    <a href="index.html" class="scryfall-btn">← Back to Main App</a>
+
+    <section>
+        <h2>Execution History</h2>
+        <div id="logContainer">Loading build history...</div>
+    </section>
+
+    <script>
+        async function loadLog() {
+            const container = document.getElementById('logContainer');
+            try {
+                const response = await fetch('./build-log.json?v=' + new Date().getTime());
+                if (!response.ok) throw new Error('Build log file not found. Run the database builder script to generate one.');
+                
+                const logs = await response.json();
+                if (!Array.isArray(logs) || logs.length === 0) {
+                    container.innerHTML = '<p>The log file is currently empty.</p>';
+                    return;
+                }
+
+                // Sort logs newest first
+                logs.reverse();
+
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                                <th>Cards Written</th>
+                                <th>Details / Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                logs.forEach(entry => {
+                    const dateFormatted = new Date(entry.timestamp).toLocaleString();
+                    const statusClass = entry.status === 'success' ? 'legal' : 'illegal';
+                    const statusText = entry.status.toUpperCase();
+                    const errorDetails = entry.error ? `<span class="error-text">${escapeHtml(entry.error)}</span>` : '-';
+
+                    html += `
+                        <tr>
+                            <td>${dateFormatted}</td>
+                            <td><span class="${statusClass}">${statusText}</span></td>
+                            <td>${entry.cardCount}</td>
+                            <td>${errorDetails}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+            } catch (error) {
+                console.error("Failed to load build-log.json:", error);
+                container.innerHTML = `<span class="illegal">Error loading log: ${error.message}</span>`;
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        loadLog();
+    </script>
+</body>
+</html>
